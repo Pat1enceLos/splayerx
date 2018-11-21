@@ -7,7 +7,7 @@
         <div class="sub-menu-wrapper"
           :style="{
             transition: showAttached ? '80ms cubic-bezier(0.17, 0.67, 0.17, 0.98)' : '150ms cubic-bezier(0.17, 0.67, 0.17, 0.98)',
-            height: `${contHeight}px`,
+            height: hiddenText ? `${contHeight + hoverHeight}px` : `${contHeight}px`,
           }">
           <div class="element bottom"><div class="element middle"><div class="element content">
 
@@ -19,16 +19,20 @@
           <div class="sub-menu">
             <div class="scrollScope"
               :style="{
-                height: `${scopeHeight}px`,
+                transition: '80ms cubic-bezier(0.17, 0.67, 0.17, 0.98)',
+                height: hiddenText ? `${scopeHeight + hoverHeight}px` : `${scopeHeight}px`,
                 overflowY: isOverFlow,
               }">
               <div class="itemContainer">
                 <div v-if="foundSubtitles && !(loadingSubsPlaceholders.length > 0)">
                   <div class="menu-item-text-wrapper"
-                       @mouseup="toggleSubtitleOff"
-                       @mouseover.stop.self="toggleItemsMouseOver(-1)"
-                       @mouseleave="toggleItemsMouseLeave(-1)"
-                       :style="{ color: hoverIndex === -1 || currentSubIden === -1 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)' }">
+                    @mouseup="toggleSubtitleOff"
+                    @mouseover="toggleItemsMouseOver(-1)"
+                    @mouseleave="toggleItemsMouseLeave(-1)"
+                    :style="{
+                      color: hoverIndex === -1 || currentSubIden === -1 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
+                      height: `${itemHeight}px`
+                    }">
                     <div class="text">无字幕</div>
                   </div>
                 </div>
@@ -37,11 +41,17 @@
                   v-for="(item, index) in computedAvaliableItems">
                   <div class="menu-item-text-wrapper"
                     @mouseup="toggleItemClick(index)"
-                    @mouseover.stop.self="toggleItemsMouseOver(index)"
+                    @mouseover="toggleItemsMouseOver(index)"
                     @mouseleave="toggleItemsMouseLeave(index)"
                     :id="'item'+index"
-                      :style="{ color: hoverIndex === index || currentSubIden === index ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)' }">
-                    <div class="text">{{ item.title }}</div>
+                      :style="{
+                        transition: isOverFlow ? '' : '80ms cubic-bezier(0.17, 0.67, 0.17, 0.98)',
+                        color: hoverIndex === index || currentSubIden === index ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
+                        height: hoverIndex === index && hiddenText ? `${itemHeight + hoverHeight}px` : `${itemHeight}px`,
+                      }">
+                    <div class="text"
+                      :style="{ wordWrap: hoverIndex === index && hiddenText ? 'break-word' : ''
+                        }">{{ item.title }}</div>
                   </div>
                 </div>
 
@@ -73,10 +83,12 @@
                   </div>
                 </div>
                 <div class="card" v-if="0 <= computedAvaliableItems.length"
-                     :style="{
-                  marginTop: `${-cardPos}px`,
-                  transition: 'all 200ms cubic-bezier(0.17, 0.67, 0.17, 0.98'
-                }">
+                  :style="{
+                    height: hiddenText && currentSubIden === hoverIndex ? `${itemHeight + hoverHeight}px` : `${itemHeight}px`,
+                    top: hiddenText && currentSubIden <= hoverIndex ? `${-hoverHeight}px` : '',
+                    marginTop: `${-cardPos}px`,
+                    transition: 'all 80ms cubic-bezier(0.17, 0.67, 0.17, 0.98)'
+                  }">
               </div>
             </div>
           </div>
@@ -119,6 +131,8 @@ export default {
       validEnter: false,
       showFlag: false,
       hoverIndex: -5,
+      hiddenText: false,
+      hoverHeight: 0,
     };
   },
   components: {
@@ -229,9 +243,17 @@ export default {
       }
     },
     toggleItemsMouseOver(index) {
+      console.log(index);
+      const hoverItem = document.querySelector(`#item${index} .text`);
+      if (hoverItem.clientWidth < hoverItem.scrollWidth) {
+        this.hoverHeight = 14 * (Math.ceil(hoverItem.scrollWidth / hoverItem.clientWidth) - 1);
+        this.hiddenText = true;
+      }
       this.hoverIndex = index;
     },
     toggleItemsMouseLeave() {
+      this.hoverHeight = 0;
+      this.hiddenText = false;
       this.hoverIndex = -5;
     },
     toggleItemClick(index) {
@@ -281,13 +303,21 @@ export default {
     },
   },
   computed: {
+    itemHeight() {
+      if (this.winWidth > 512 && this.winWidth <= 854) {
+        return 27;
+      } else if (this.winWidth > 854 && this.winWidth <= 1920) {
+        return 32;
+      }
+      return 44;
+    },
     isOverFlow() {
       if (this.winWidth > 512 && this.winWidth <= 854) {
-        return this.computedAvaliableItems.length > 2 ? 'scroll' : '';
+        return this.contHeight + this.hoverHeight >= 138 ? 'scroll' : '';
       } else if (this.winWidth > 854 && this.winWidth <= 1920) {
-        return this.computedAvaliableItems.length > 4 ? 'scroll' : '';
+        return this.contHeight + this.hoverHeight >= 239 ? 'scroll' : '';
       }
-      return this.computedAvaliableItems.length > 6 ? ' scroll' : '';
+      return this.contHeight + this.hoverHeight >= 433 ? ' scroll' : '';
     },
     scopeHeight() {
       if (this.winWidth > 512 && this.winWidth <= 854) {
@@ -327,15 +357,15 @@ export default {
       if (this.winWidth > 512 && this.winWidth <= 854) {
         return this.computedAvaliableItems.length > 0 ?
           (this.computedAvaliableItems.length - this.currentSubIden) * 31 :
-          this.scopeHeight;
+          this.scopeHeight + 4;
       } else if (this.winWidth > 854 && this.winWidth <= 1920) {
         return this.computedAvaliableItems.length > 0 ?
           (this.computedAvaliableItems.length - this.currentSubIden) * 37 :
-          this.scopeHeight;
+          this.scopeHeight + 5;
       }
       return this.computedAvaliableItems.length > 0 ?
         (this.computedAvaliableItems.length - this.currentSubIden) * 51 :
-        this.scopeHeight;
+        this.scopeHeight + 7;
     },
     winWidth() {
       return this.$store.getters.winWidth;
@@ -452,20 +482,11 @@ export default {
       box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
     }
   }
-  .sub-menu{
-    display: flex;
-    flex-direction: column;
-  }
-  .scrollScope {
-    display: flex;
-    flex-direction: column;
-  }
+
   .menu-item-text-wrapper {
     .text {
       overflow: hidden; //超出的文本隐藏
-      white-space: nowrap;
       text-overflow: ellipsis;
-      -webkit-background-clip: text;
       text-transform: capitalize;
     }
   }
@@ -474,7 +495,6 @@ export default {
       overflow: hidden; //超出的文本隐藏
       white-space: nowrap;
       text-overflow: ellipsis;
-      -webkit-background-clip: text;
       color: grey;
     }
   }
@@ -482,7 +502,8 @@ export default {
     cursor: default;
   }
   .card {
-    z-index: -1;
+    position: relative;
+    z-index: -5;
     border-radius: 7px;
     opacity: 0.4;
     border: 0.5px solid rgba(255, 255, 255, 0.20);
@@ -502,13 +523,14 @@ export default {
       flex-direction: row;
       .title {
         font-size: 13px;
-        margin: auto 16px;
+        margin: 15px auto auto 16px;
         color: rgba(255, 255, 255, 0.3);
         letter-spacing: 0.2px;
+        line-height: 15px;
       }
       .refresh {
         font-size: 13px;
-        margin: auto 15px auto auto;
+        margin: 14px 15px auto auto;
       }
     }
     .sub-menu-wrapper {
@@ -516,6 +538,7 @@ export default {
       bottom: 32px;
       left: -58px;
       width: 170px;
+      max-height: 138px;
     }
     .scrollScope {
       width: 160px;
@@ -524,7 +547,7 @@ export default {
     }
     .menu-item-text-wrapper {
       width: 142px;
-      height: 27px;
+      /*height: 27px;*/
       display: flex;
       margin: auto auto 4px 9px;
       .text {
@@ -539,6 +562,7 @@ export default {
       height: 27px;
       display: flex;
       margin-left: 9px;
+      margin-bottom: 4px;
       .text {
         font-size: 11px;
         letter-spacing: 0.2px;
@@ -548,7 +572,7 @@ export default {
     }
     .card {
       width: 142px;
-      height: 27px;
+      /*height: 27px;*/
       margin-left: 9px;
     }
   }
@@ -561,13 +585,14 @@ export default {
       flex-direction: row;
       .title {
         font-size: 15px;
-        margin: auto 19px;
+        margin: 18px auto auto 19px;
         color: rgba(255, 255, 255, 0.3);
         letter-spacing: 0.23px;
+        line-height: 17px;
       }
       .refresh {
         font-size: 13px;
-        margin: auto 19px auto auto;
+        margin: 17px 19px auto auto;
       }
     }
     .scrollScope {
@@ -580,10 +605,11 @@ export default {
       bottom: 44px;
       left: -42px;
       width: 204px;
+      max-height: 239px;
     }
     .menu-item-text-wrapper {
       width: 174px;
-      height: 32px;
+      /*height: 32px;*/
       display: flex;
       margin: auto auto 5px 9.5px;
       .text {
@@ -598,6 +624,7 @@ export default {
       height: 32px;
       display: flex;
       margin-left: 9.5px;
+      margin-bottom: 5px;
       .text {
         font-size: 12px;
         letter-spacing: 0.2px;
@@ -607,7 +634,7 @@ export default {
     }
     .card {
       width: 174px;
-      height: 32px;
+      /*height: 32px;*/
       margin-left: 9.5px;
     }
   }
@@ -620,13 +647,14 @@ export default {
       flex-direction: row;
       .title {
         font-size: 21px;
-        margin: auto 26px;
+        margin: 24px auto auto 26px;
         color: rgba(255, 255, 255, 0.3);
         letter-spacing: 0.32px;
+        line-height: 23px;
       }
       .refresh {
         font-size: 13px;
-        margin: auto 26px auto auto;
+        margin: 23px 26px auto auto;
       }
     }
     .scrollScope {
@@ -639,10 +667,11 @@ export default {
       bottom: 500px;
       left: -33px;
       width: 286px;
+      max-height: 433px;
     }
     .menu-item-text-wrapper {
       width: 242px;
-      height: 44px;
+      /*height: 44px;*/
       display: flex;
       margin: auto auto 7px 12px;
       .text {
@@ -657,6 +686,7 @@ export default {
       height: 44px;
       display: flex;
       margin-left: 12px;
+      margin-bottom: 7px;
       .text {
         font-size: 16px;
         letter-spacing: 0.27px;
@@ -666,7 +696,7 @@ export default {
     }
     .card {
       width: 242px;
-      height: 44px;
+      /*height: 44px;*/
       margin-left: 12px;
     }
   }
