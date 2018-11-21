@@ -42,7 +42,7 @@ const mutations = {
     state.SubtitleNames = subtitles;
   },
   AddSubtitle(state, subtitles) {
-    state.SubtitleNames.push(...subtitles);
+    state.SubtitleNames.splice(0, 0, ...subtitles);
   },
   AddServerSubtitle(state, subtitles) {
     state.SubtitleNames.push(...subtitles);
