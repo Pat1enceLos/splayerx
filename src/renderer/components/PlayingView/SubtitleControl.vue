@@ -4,7 +4,7 @@
     class="sub-control">
     <div class="sub-btn-control">
       <transition name="sub-trans-l">
-        <div class="sub-menu-wrapper"
+        <div class="sub-menu-wrapper subtitle-scroll-items"
           :style="{
             transition: showAttached ? '80ms cubic-bezier(0.17, 0.67, 0.17, 0.98)' : '150ms cubic-bezier(0.17, 0.67, 0.17, 0.98)',
             height: hiddenText ? `${contHeight + hoverHeight}px` : `${contHeight}px`,
@@ -50,7 +50,8 @@
                         height: hoverIndex === index && hiddenText ? `${itemHeight + hoverHeight}px` : `${itemHeight}px`,
                       }">
                     <div class="text"
-                      :style="{ wordWrap: hoverIndex === index && hiddenText ? 'break-word' : ''
+                      :style="{ wordWrap: hoverIndex === index && hiddenText ? 'break-word' : '',
+                      whiteSpace: hoverIndex === index && hiddenText ? '' : 'nowrap'
                         }">{{ item.title }}</div>
                   </div>
                 </div>
@@ -87,7 +88,7 @@
                     height: hiddenText && currentSubIden === hoverIndex ? `${itemHeight + hoverHeight}px` : `${itemHeight}px`,
                     top: hiddenText && currentSubIden <= hoverIndex ? `${-hoverHeight}px` : '',
                     marginTop: `${-cardPos}px`,
-                    transition: 'all 80ms cubic-bezier(0.17, 0.67, 0.17, 0.98)'
+                    transition: 'all 200ms cubic-bezier(0.17, 0.67, 0.17, 0.98)'
                   }">
               </div>
             </div>
@@ -133,6 +134,7 @@ export default {
       hoverIndex: -5,
       hiddenText: false,
       hoverHeight: 0,
+      shouldHidden: false,
     };
   },
   components: {
@@ -140,6 +142,9 @@ export default {
     Icon,
   },
   watch: {
+    hoverHeight(val) {
+      console.log(val);
+    },
     showAttached(val) {
       if (!val) {
         this.animFlag = true;
@@ -174,6 +179,12 @@ export default {
     });
   },
   methods: {
+    orify(...args) {
+      return args.some(arg => arg == true); // eslint-disable-line
+    },
+    andify(...args) {
+      return args.every(arg => arg == true); // eslint-disable-line
+    },
     handleAnimation(anim) {
       this.anim = anim;
     },
@@ -243,15 +254,23 @@ export default {
       }
     },
     toggleItemsMouseOver(index) {
-      console.log(index);
-      const hoverItem = document.querySelector(`#item${index} .text`);
-      if (hoverItem.clientWidth < hoverItem.scrollWidth) {
-        this.hoverHeight = 14 * (Math.ceil(hoverItem.scrollWidth / hoverItem.clientWidth) - 1);
-        this.hiddenText = true;
+      if (index >= 0) {
+        const hoverItem = document.querySelector(`#item${index} .text`);
+        if (hoverItem.clientWidth < hoverItem.scrollWidth) {
+          this.shouldHidden = true;
+          this.hoverHeight = this.textHeight *
+            (Math.ceil(hoverItem.scrollWidth / hoverItem.clientWidth) - 1);
+          setTimeout(() => {
+            if (this.shouldHidden) {
+              this.hiddenText = true;
+            }
+          }, 1500);
+        }
       }
       this.hoverIndex = index;
     },
     toggleItemsMouseLeave() {
+      this.shouldHidden = false;
       this.hoverHeight = 0;
       this.hiddenText = false;
       this.hoverIndex = -5;
@@ -303,6 +322,14 @@ export default {
     },
   },
   computed: {
+    textHeight() {
+      if (this.winWidth > 512 && this.winWidth <= 854) {
+        return 13;
+      } else if (this.winWidth > 854 && this.winWidth <= 1920) {
+        return 14;
+      }
+      return 18;
+    },
     itemHeight() {
       if (this.winWidth > 512 && this.winWidth <= 854) {
         return 27;
@@ -312,12 +339,12 @@ export default {
       return 44;
     },
     isOverFlow() {
-      if (this.winWidth > 512 && this.winWidth <= 854) {
-        return this.contHeight + this.hoverHeight >= 138 ? 'scroll' : '';
+      if (this.andify(this.winWidth > 512, this.winWidth <= 854)) {
+        return this.orify(this.andify(this.contHeight + this.hoverHeight > 138, this.hiddenText), this.computedAvaliableItems.length > 2) ? 'scroll' : '';
       } else if (this.winWidth > 854 && this.winWidth <= 1920) {
-        return this.contHeight + this.hoverHeight >= 239 ? 'scroll' : '';
+        return this.orify(this.andify(this.contHeight + this.hoverHeight > 239, this.hiddenText), this.computedAvaliableItems.length > 4) ? 'scroll' : '';
       }
-      return this.contHeight + this.hoverHeight >= 433 ? ' scroll' : '';
+      return this.orify(this.andify(this.contHeight + this.hoverHeight >= 433, this.hiddenText), this.computedAvaliableItems.length > 6) ? ' scroll' : '';
     },
     scopeHeight() {
       if (this.winWidth > 512 && this.winWidth <= 854) {
@@ -553,7 +580,7 @@ export default {
       .text {
         font-size: 11px;
         letter-spacing: 0.2px;
-        line-height: 14px;
+        line-height: 13px;
         margin: auto 9.43px;
       }
     }
@@ -566,7 +593,7 @@ export default {
       .text {
         font-size: 11px;
         letter-spacing: 0.2px;
-        line-height: 14px;
+        line-height: 15px;
         margin: auto 9.43px;
       }
     }
@@ -677,7 +704,7 @@ export default {
       .text {
         font-size: 16px;
         letter-spacing: 0.27px;
-        line-height: 16px;
+        line-height: 18px;
         margin: auto 17.89px;
       }
     }

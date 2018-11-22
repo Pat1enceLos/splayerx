@@ -604,11 +604,16 @@ new Vue({
     window.addEventListener('wheel', (e) => {
       const up = e.deltaY < 0;
       let isAdvanceColumeItem;
+      let isSubtitleScrollItem;
       const nodeList = document.querySelector('.advance-column-items').childNodes;
+      const subList = document.querySelector('.subtitle-scroll-items').childNodes;
       for (let i = 0; i < nodeList.length; i += 1) {
         isAdvanceColumeItem = nodeList[i].contains(e.target);
       }
-      if (!isAdvanceColumeItem) {
+      for (let i = 0; i < subList.length; i += 1) {
+        isSubtitleScrollItem = subList[i].contains(e.target);
+      }
+      if (!isAdvanceColumeItem && isSubtitleScrollItem) {
         this.$store.dispatch(up ? videoActions.INCREASE_VOLUME : videoActions.DECREASE_VOLUME, 6);
       }
     });
