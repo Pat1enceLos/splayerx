@@ -252,6 +252,22 @@ export default {
           cb(err);
         });
     },
+    async refreshServerSubs() {
+      const subStatus = await this.subtitleInitializingStatus();
+      const serverSubsStatus = subStatus[2];
+      this.$bus.$emit('loading-subtitles', {
+        type: 'Server',
+        size: serverSubsStatus.size,
+      });
+      this.loadServerTextTracks((err) => {
+        if (err) {
+          this.addLog('error', err);
+          throw err;
+        }
+        this.toggleSutitleShow();
+        this.$bus.$emit('subtitles-finished-loading', 'Server');
+      });
+    },
     hasEmbeddedSubs(filePath) {
       return new Promise((resolve) => {
         let foo;
@@ -632,7 +648,7 @@ export default {
      */
     subNameFromLocalProcess(file) {
       const res = {
-        title: file.language === undefined ? path.parse(file).name : file.language,
+        title: file.language === undefined ? path.basename(file) : file.language,
         status: null,
         textTrackID: this.textTrackID,
         origin: 'local',
@@ -807,6 +823,7 @@ export default {
     });
     this.$bus.$on('video-loaded', this.subtitleInitialize);
 
+    this.$bus.$on('refresh-subtitle', this.refreshServerSubs);
     this.$bus.$on('sub-first-change', (targetIndex) => {
       this.subIndex = targetIndex;
       this.clearSubtitle();
