@@ -13,7 +13,9 @@
 
           <div class="topContainer">
             <div class="title">字幕选择</div>
-            <Icon type="refresh" class="refresh" @mouseup.native="handleRefresh"></Icon>
+            <Icon type="refresh" class="refresh" @mouseup.native="handleRefresh"
+              :style="{ transform: `rotate(${rotateTime * 360}deg)`,
+                        transition: 'transform 1s linear'}"></Icon>
           </div>
 
           <div class="sub-menu">
@@ -135,6 +137,9 @@ export default {
       hiddenText: false,
       hoverHeight: 0,
       shouldHidden: false,
+      timer: null,
+      count: 0,
+      rotateTime: 0,
     };
   },
   components: {
@@ -167,6 +172,10 @@ export default {
         this.$emit('update:showAttached', false);
       }
     },
+    computedAvaliableItems() {
+      clearInterval(this.timer);
+      this.count = this.rotateTime * 100;
+    },
   },
   mounted() {
     this.$bus.$on('add-subtitle', () => {
@@ -178,6 +187,10 @@ export default {
   methods: {
     handleRefresh() {
       this.$bus.$emit('refresh-subtitle');
+      this.timer = setInterval(() => {
+        this.count += 1;
+        this.rotateTime = Math.ceil(this.count / 100);
+      }, 10);
     },
     orify(...args) {
       return args.some(arg => arg == true); // eslint-disable-line
