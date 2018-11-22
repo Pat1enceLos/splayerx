@@ -13,7 +13,7 @@
 
           <div class="topContainer">
             <div class="title">字幕选择</div>
-            <Icon type="refresh" class="refresh"></Icon>
+            <Icon type="refresh" class="refresh" @mouseup.native="handleRefresh"></Icon>
           </div>
 
           <div class="sub-menu">
@@ -142,9 +142,6 @@ export default {
     Icon,
   },
   watch: {
-    hoverHeight(val) {
-      console.log(val);
-    },
     showAttached(val) {
       if (!val) {
         this.animFlag = true;
@@ -179,6 +176,9 @@ export default {
     });
   },
   methods: {
+    handleRefresh() {
+      this.$bus.$emit('refresh-subtitle');
+    },
     orify(...args) {
       return args.some(arg => arg == true); // eslint-disable-line
     },
@@ -340,11 +340,11 @@ export default {
     },
     isOverFlow() {
       if (this.andify(this.winWidth > 512, this.winWidth <= 854)) {
-        return this.orify(this.andify(this.contHeight + this.hoverHeight > 138, this.hiddenText), this.computedAvaliableItems.length > 2) ? 'scroll' : '';
+        return this.orify(this.andify(this.contHeight + this.hoverHeight > 138, this.hiddenText), this.computedAvaliableItems.length + this.loadingPlaceholderList.length > 2) ? 'scroll' : '';
       } else if (this.winWidth > 854 && this.winWidth <= 1920) {
-        return this.orify(this.andify(this.contHeight + this.hoverHeight > 239, this.hiddenText), this.computedAvaliableItems.length > 4) ? 'scroll' : '';
+        return this.orify(this.andify(this.contHeight + this.hoverHeight > 239, this.hiddenText), this.computedAvaliableItems.length + this.loadingPlaceholderList.length > 4) ? 'scroll' : '';
       }
-      return this.orify(this.andify(this.contHeight + this.hoverHeight >= 433, this.hiddenText), this.computedAvaliableItems.length > 6) ? ' scroll' : '';
+      return this.orify(this.andify(this.contHeight + this.hoverHeight >= 433, this.hiddenText), this.computedAvaliableItems.length + this.loadingPlaceholderList.length > 6) ? ' scroll' : '';
     },
     scopeHeight() {
       if (this.winWidth > 512 && this.winWidth <= 854) {
@@ -383,15 +383,18 @@ export default {
     cardPos() {
       if (this.winWidth > 512 && this.winWidth <= 854) {
         return this.computedAvaliableItems.length > 0 ?
-          (this.computedAvaliableItems.length - this.currentSubIden) * 31 :
+          ((this.computedAvaliableItems.length + this.loadingPlaceholderList.length)
+            - this.currentSubIden) * 31 :
           this.scopeHeight + 4;
       } else if (this.winWidth > 854 && this.winWidth <= 1920) {
         return this.computedAvaliableItems.length > 0 ?
-          (this.computedAvaliableItems.length - this.currentSubIden) * 37 :
+          ((this.computedAvaliableItems.length + this.loadingPlaceholderList.length)
+            - this.currentSubIden) * 37 :
           this.scopeHeight + 5;
       }
       return this.computedAvaliableItems.length > 0 ?
-        (this.computedAvaliableItems.length - this.currentSubIden) * 51 :
+        ((this.computedAvaliableItems.length + this.loadingPlaceholderList.length)
+          - this.currentSubIden) * 51 :
         this.scopeHeight + 7;
     },
     winWidth() {
