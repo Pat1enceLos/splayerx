@@ -1,13 +1,29 @@
 <template>
-<base-info-card class="card"
-  :borderRadius="7"
-  :contentMinHeight="119"
-  :contentMinWidth="170"
+  <div class="container" :style="{
+  borderRadius: '7px',
+  boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.1)',
+  border: 'rgba(255, 255, 255, 0.2)',
+  width: 'auto',
+  height: 'auto',
+  }">
+  <div class="bottom element" :style="{
+    background: 'rgba(0, 0, 0, 0.1)',
+    backdropFilter: 'blur(10px)',
+    clipPath: 'inset(0 round 7px)',
+    width: 'auto',
+    height: 'auto',
+  }">
+<div class="card element"
   :style="{
+    whiteSpace: 'nowrap',
     cursor: 'default',
     height: this.readyShow === 'mainMenu' ? menuCardHeight : this.readyShow === 'subMenu' ? subtitleCardHeight : audioCardHeight,
     transition: 'height 100ms linear',
     fontWeight: '700',
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.1)',
+    margin: '1px 1px 1px 1px',
   }">
   <transition :name="this.readyShow === 'mainMenu' ? 'setUp' : 'setUpLeft'">
     <div class="mainItems" v-show="readyShow === 'mainMenu'"
@@ -175,9 +191,12 @@
             <div :style="{
               color: hoverAudioIndex === 2 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
               transition: 'color 300ms',
+              marginLeft: '17px',
+              marginRight: '10px',
             }">{{ this.$t('advance.changeTrack') }}</div>
             <div class="trackDetail"
               :style="{
+                marginRight: '17px',
                 color: 'rgba(255, 255, 255, 0.6)',
               }">{{ currentAudioTrack }}</div>
           </div>
@@ -189,7 +208,9 @@
       </div>
     </div>
   </transition>
-</base-info-card>
+</div>
+  </div>
+  </div>
 </template>
 
 <script>
@@ -417,18 +438,21 @@ export default {
 <style lang="scss" scoped>
 @media screen and (max-aspect-ratio: 1/1) and (min-width: 289px) and (max-width: 480px), screen and (min-aspect-ratio: 1/1) and (min-height: 289px) and (max-height: 480px) {
   .card {
-    width: 170px;
+    min-width: 170px;
+    max-width: 600px;
   }
   .playSpeed, .hoverBack {
     width: 170px;
   }
   .subtitleControl, .audioItems, .topContainer, .itemSize, .subtitleStyle, .subtitleDelay, .audioDelay, .hoverSubBack, .subContainer, .hoverAudioBack, .audioContainer, .trackContainer {
-    width: 170px;
+    min-width: 170px;
+    width: auto;
     height: 37px;
   }
   .item2, .item3 {
     font-size: 13px;
-    width: 136px;
+    min-width: 136px;
+    width: auto;
     height: 18px;
   }
   .topContent {
@@ -564,8 +588,10 @@ export default {
 
 .card {
   -webkit-app-region: no-drag;
+  /*backdrop-filter: blur(10px);*/
 }
 .hoverBack {
+  position: absolute;
   background-image: linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.045) 20%, rgba(255,255,255,0.00) 78%, rgba(255,255,255,0.00) 100%);
 }
 .mainItems {
@@ -645,7 +671,7 @@ export default {
 .mainItems2 {
   display: flex;
   flex-direction: column;
-  position: absolute;
+  /*position: absolute;*/
   .topContainer {
     display: flex;
     cursor: pointer;
@@ -656,7 +682,6 @@ export default {
   }
   .trackContainer {
     display: flex;
-    position: absolute;
   }
   .audioDelay {
     display: flex;

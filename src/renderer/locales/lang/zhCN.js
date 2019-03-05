@@ -130,7 +130,7 @@ export default {
     subDelay: '字幕延迟',
     fontItems: ['小', '中', '大', '超大'],
     audioDelay: '音频延迟',
-    changeTrack: '切换轨道',
+    changeTrack: '切换轨道切换轨道切换轨道切换',
     chosenTrack: '默认',
     track: '音轨',
   },

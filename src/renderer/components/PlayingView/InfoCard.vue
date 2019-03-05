@@ -65,14 +65,6 @@ export default {
     backdrop-filter: blur(10px);
     clip-path: inset(0 round var(--border-radius));
   }
-  .middle {
-    min-width: calc(var(--content-min-width) + 2px);
-    min-height: calc(var(--content-min-height) + 2px);
-    width: 100%;
-    height: 100%;
-    top: 0;
-    background: rgba(255, 255, 255, 0.2);
-  }
   .content {
     min-width: var(--content-min-width);
     min-height: var(--content-min-height);

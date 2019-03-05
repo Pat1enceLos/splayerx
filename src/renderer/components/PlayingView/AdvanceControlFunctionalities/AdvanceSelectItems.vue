@@ -166,9 +166,10 @@ export default {
 <style lang="scss" scoped>
 @media screen and (max-aspect-ratio: 1/1) and (min-width: 289px) and (max-width: 480px), screen and (min-aspect-ratio: 1/1) and (min-height: 289px) and (max-height: 480px) {
   .itemContainer {
-    width: 170px;
+    width: 100%;
     .textContainer {
-      width: 136px;
+      min-width: 136px;
+      width: auto;
       height: 37px;
       font-size: 13px;
       margin: auto auto auto 17px;
@@ -337,7 +338,7 @@ export default {
     }
     .rightItem {
       color: rgba(255, 255, 255, 0.6);
-      margin: auto 0 auto auto;
+      margin: auto 17px auto auto;
     }
   }
   .listContainer {
