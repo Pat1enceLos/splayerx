@@ -5,30 +5,30 @@
     @dblclick.stop="handleDbClick">
     <div class="win-icons" v-if="!isDarwin" v-fade-in="showTitleBar">
       <Icon class="title-button no-drag"
-        @click.native="handleMinimize"
+        @mouseup.native="handleMinimize"
         type="titleBarWinExitFull">
       </Icon>
       <Icon class="title-button no-drag"
-        @click.native="handleWinFull"
+        @mouseup.native="handleWinFull"
         v-show="middleButtonStatus === 'maximize'"
         type="titleBarWinFull">
       </Icon>
       <Icon class="title-button no-drag"
-        @click.native="handleRestore"
+        @mouseup.native="handleRestore"
         type="titleBarWinRestore"
         v-show="middleButtonStatus === 'restore'">
       </Icon>
       <Icon class="title-button no-drag"
-        @click.native="handleFullscreenExit"
+        @mouseup.native="handleFullscreenExit"
         v-show="middleButtonStatus === 'exit-fullscreen'"
         type="titleBarWinResize">
       </Icon>
       <Icon class="title-button no-drag"
-        @click.native="handleClose"
+        @mouseup.native="handleClose"
         type="titleBarWinClose">
       </Icon>
     </div>
-    <div class="mac-icons" 
+    <div class="mac-icons"
       v-if="isDarwin"
       v-fade-in="showTitleBar"
       @mouseover="handleMouseOver"
@@ -36,24 +36,24 @@
       <Icon id="close" class="title-button no-drag"
             type="titleBarClose"
             :state="state"
-            @click.native="handleClose">
+            @mouseup.native="handleClose">
       </Icon>
       <Icon id="minimize" class="title-button no-drag"
             type="titleBarExitFull"
-            @click.native="handleMinimize"
+            @mouseup.native="handleMinimize"
             :class="{ disabled: middleButtonStatus === 'exit-fullscreen' }"
             :state="state"
             :isFullScreen="middleButtonStatus">
       </Icon>
       <Icon id="maximize" class="title-button no-drag"
             :type="itemType"
-            @click.native="handleMacFull"
+            @mouseup.native="handleMacFull"
             v-show="middleButtonStatus !== 'exit-fullscreen'"
             :state="state"
             :style="{ transform: itemType === this.itemTypeEnum.MAXSCREEN ? 'rotate(45deg)' : ''}">
       </Icon>
       <Icon id="restore" class="title-button no-drag"
-            @click.native="handleFullscreenExit"
+            @mouseup.native="handleFullscreenExit"
             v-show="middleButtonStatus === 'exit-fullscreen'"
             type="titleBarRecover"
             :state="state">
@@ -156,11 +156,13 @@ export default {
       this.$electron.ipcRenderer.send('callMainWindowMethod', 'unmaximize');
     },
     handleFullscreenExit() {
+      this.$bus.$emit('off-fullscreen');
       this.$electron.ipcRenderer.send('callMainWindowMethod', 'setFullScreen', [false]);
     },
     // OS-specific methods
     handleMacFull() {
       if (this.itemType === this.itemTypeEnum.FULLSCREEN) {
+        this.$bus.$emit('to-fullscreen');
         this.$electron.ipcRenderer.send('callMainWindowMethod', 'setFullScreen', [true]);
       } else if (this.isMaximized) {
         this.$electron.ipcRenderer.send('callMainWindowMethod', 'unmaximize');

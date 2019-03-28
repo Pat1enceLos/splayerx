@@ -18,6 +18,11 @@ import {
   NOT_SUPPORTED_SUBTITLE,
   REQUEST_TIMEOUT,
   SUBTITLE_OFFLINE,
+  ONLINE_LOADING,
+  SUBTITLE_UPLOAD,
+  UPLOAD_FAILED,
+  UPLOAD_SUCCESS,
+  ADD_NO_VIDEO,
 } from '../shared/notificationcodes';
 
 /**
@@ -37,6 +42,7 @@ let tray = null;
 let inited = false;
 const filesToOpen = [];
 const snapShotQueue = [];
+const thumbnailTask = [];
 const mediaInfoQueue = [];
 const embeeddSubtitlesQueue = new TaskQueue();
 const mainURL = process.env.NODE_ENV === 'development'
@@ -127,6 +133,35 @@ function registerMainWindowEvent() {
     if (!mainWindow || event.sender.isDestroyed()) return;
     mainWindow.setSize(...args);
     event.sender.send('windowSizeChange-asyncReply', mainWindow.getSize());
+  });
+  function thumbnail(args, cb) {
+    splayerx.generateThumbnails(
+      args.src, args.outPath, args.width, args.num.rows, args.num.cols,
+      (ret) => {
+        console[ret === '0' ? 'log' : 'error'](ret, args.src);
+        cb(ret, args.src);
+      },
+    );
+  }
+  function thumbnailTaskCallback() {
+    const cb = (ret, src) => {
+      thumbnailTask.shift();
+      if (thumbnailTask.length > 0) {
+        thumbnail(thumbnailTask[0], cb);
+      }
+      if (ret === '0') {
+        mainWindow?.webContents.send('thumbnail-saved', src);
+      }
+    };
+    thumbnail(thumbnailTask[0], cb);
+  }
+  ipcMain.on('generateThumbnails', (event, args) => {
+    if (thumbnailTask.length === 0) {
+      thumbnailTask.push(args);
+      thumbnailTaskCallback();
+    } else {
+      thumbnailTask.splice(1, 1, args);
+    }
   });
 
   function timecodeFromSeconds(s) {
@@ -294,13 +329,23 @@ function registerMainWindowEvent() {
           case SUBTITLE_OFFLINE:
           case NOT_SUPPORTED_SUBTITLE:
           case REQUEST_TIMEOUT:
+          case UPLOAD_FAILED:
+          case ADD_NO_VIDEO:
             mainWindow.webContents.send('addMessages', log.errcode);
             break;
           default:
             break;
         }
       } else if (log.code) {
-        mainWindow.webContents.send('addMessages', log.code);
+        switch (log.code) {
+          case ONLINE_LOADING:
+          case SUBTITLE_UPLOAD:
+          case UPLOAD_SUCCESS:
+            mainWindow.webContents.send('addMessages', log.code);
+            break;
+          default:
+            break;
+        }
       }
     }
   });
@@ -339,8 +384,8 @@ function registerMainWindowEvent() {
       useContentSize: true,
       frame: false,
       titleBarStyle: 'none',
-      width: 510,
-      height: 360,
+      width: 540,
+      height: 370,
       transparent: true,
       resizable: false,
       show: false,
@@ -430,6 +475,9 @@ function createWindow() {
   }
 }
 
+app.on('before-quit', () => {
+  mainWindow?.webContents.send('quit');
+});
 app.on('second-instance', () => {
   if (mainWindow?.isMinimized()) mainWindow.restore();
   mainWindow?.focus();

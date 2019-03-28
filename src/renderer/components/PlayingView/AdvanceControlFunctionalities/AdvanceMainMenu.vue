@@ -137,9 +137,9 @@
           transition: 'height 100ms linear',
         }">
         <transition name="arrow">
-          <div class="hoverBack" v-show="!subDelayChosen && hoverSubIndex === 3" :style="{ height: subDelayHeight }"></div>
+          <div class="hoverBack" v-show="!subDelayChosen && hoverSubIndex === 3 && isSubtitleAvailable" :style="{ height: subDelayHeight }"></div>
         </transition>
-        <advance-selected-items :isSubDelay="true" :item="$t('advance.subDelay')" :size="computedSize" :isChosen="subDelayChosen" :color="hoverSubIndex === 3 && !subDelayChosen ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)'"></advance-selected-items>
+        <advance-selected-items :isSubtitleAvaliable="isSubtitleAvailable" :isSubDelay="true" :item="$t('advance.subDelay')" :size="computedSize" :isChosen="subDelayChosen" :color="hoverSubIndex === 3 && !subDelayChosen ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)'"></advance-selected-items>
       </div>
     </div>
   </transition>
@@ -188,13 +188,13 @@
         <transition name="audioTransIn">
           <div class="item2" v-show="!showTrack"
             :style="{ cursor: 'pointer' }">
-            <div :style="{
+            <div :class="$i18n.locale === 'ja' ? 'advanceJaTitle' : 'advanceNormalTitle'" :style="{
               color: hoverAudioIndex === 2 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
               transition: 'color 300ms',
               marginLeft: '17px',
               marginRight: '10px',
             }">{{ this.$t('advance.changeTrack') }}</div>
-            <div class="trackDetail"
+            <div :class="$i18n.locale === 'ja' ? 'advanceJaItem' : 'advanceNormalItem'"
               :style="{
                 marginRight: '17px',
                 color: 'rgba(255, 255, 255, 0.6)',
@@ -270,7 +270,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(['winWidth', 'currentSubtitleId', 'winHeight', 'intrinsicWidth', 'intrinsicHeight']),
+    ...mapGetters(['winWidth', 'currentFirstSubtitleId', 'winHeight', 'intrinsicWidth', 'intrinsicHeight']),
     computedSize() {
       return this.intrinsicWidth / this.intrinsicHeight >= 1 ? this.winHeight : this.winWidth;
     },
@@ -317,6 +317,9 @@ export default {
         return `${this.initialSize(this.containerHeight)}px`;
       }
       return `${this.initialSize(119)}px`;
+    },
+    isSubtitleAvailable() {
+      return this.currentFirstSubtitleId !== '';
     },
     trackNum() {
       return this.$store.getters.audioTrackList.length;
@@ -399,10 +402,12 @@ export default {
       this.subDelayChosen = false;
     },
     handleDelayClick() {
-      this.hoverSubIndex = -1;
-      this.subDelayChosen = true;
-      this.subSizeChosen = false;
-      this.subColorChosen = false;
+      if (this.isSubtitleAvailable) {
+        this.hoverSubIndex = -1;
+        this.subDelayChosen = true;
+        this.subSizeChosen = false;
+        this.subColorChosen = false;
+      }
     },
     handleAudioBackEnter() {
       this.backAudioHover = true;
@@ -465,9 +470,6 @@ export default {
     line-height: 13px;
     margin-left: 3px;
   }
-  .trackDetail {
-    font-size: 11px;
-  }
   .setUp-enter-active {
     animation: showP1 .2s;
   }
@@ -514,9 +516,6 @@ export default {
     line-height: 15.6px;
     margin-left: 3.6px;
   }
-  .trackDetail {
-    font-size: 13.2px;
-  }
   .setUp-enter-active {
     animation: showP2 .2s;
   }
@@ -561,9 +560,6 @@ export default {
     font-size: 18.48px;
     line-height: 21.84px;
     margin-left: 5.04px;
-  }
-  .trackDetail {
-    font-size: 18.48px;
   }
   .setUp-enter-active {
     animation: showP3 .2s;

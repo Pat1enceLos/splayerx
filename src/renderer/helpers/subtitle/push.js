@@ -3,7 +3,6 @@ import Sagi from '@/helpers/sagi';
 
 const validProperties = [
   'mediaIdentity',
-  'languageCode',
   'format',
   'playedTime',
   'totalTime',
@@ -25,21 +24,23 @@ export class TranscriptQueue {
   }
 
   subtitleState = {};
-  async add(subtitle) {
+  async add(subtitle, isManual) {
     if (checkProperty(subtitle)) {
       const id = `${subtitle.src}-${subtitle.mediaIdentity}`;
       const options = { priority: 0 };
-      switch (this.subtitleState[id]) {
-        default:
-          this.subtitleState[id] = 'loading';
-          break;
-        case 'failed':
-          this.subtitleState[id] = 'loading';
-          options.priority = 1;
-          break;
-        case 'loading':
-        case 'successful':
-          return false;
+      if (!isManual) {
+        switch (this.subtitleState[id]) {
+          default:
+            this.subtitleState[id] = 'loading';
+            break;
+          case 'failed':
+            this.subtitleState[id] = 'loading';
+            options.priority = 1;
+            break;
+          case 'loading':
+          case 'successful':
+            return false;
+        }
       }
       return this.queue.add(() => Sagi.pushTranscript(subtitle), options)
         .then(() => {

@@ -30,7 +30,7 @@ class Sagi {
       Vue.http.get('https://ip.xindong.com/myip').then((response) => {
         metadata.set('clientip', response.bodyText);
         cb(null, metadata);
-      }, (response) => {
+      }, () => {
         cb(null, metadata);
       });
     };
@@ -47,12 +47,13 @@ class Sagi {
     this.transcripts = [];
   }
 
-  mediaTranslateRaw(mediaIdentity, languageCode) {
+  mediaTranslateRaw(mediaIdentity, languageCode, hints) {
     return new Promise((resolve, reject) => {
       const client = new translationRpc.TranslationClient(this.endpoint, this.creds);
       const req = new translationMsg.MediaTranslationRequest();
       req.setMediaIdentity(mediaIdentity);
       req.setLanguageCode(languageCode);
+      req.setHints(hints);
       client.translateMedia(req, (err, res) => {
         if (err) {
           reject(err);
@@ -62,13 +63,13 @@ class Sagi {
     });
   }
 
-  mediaTranslate({ mediaIdentity, languageCode }) {
+  mediaTranslate({ mediaIdentity, languageCode, hints }) {
     if (!languageCode) {
       languageCode = 'zh';
       console.warn('No languageCode provided, falling back to zh.');
     }
     return new Promise((resolve, reject) => {
-      this.mediaTranslateRaw(mediaIdentity, languageCode).then((response) => {
+      this.mediaTranslateRaw(mediaIdentity, languageCode, hints).then((response) => {
         const { error, resultsList } = response.toObject();
         if (error && error.code) reject(error);
         resolve(resultsList);
@@ -107,6 +108,7 @@ class Sagi {
     playedTime,
     totalTime,
     delay,
+    hints,
     payload,
   ) {
     return new Promise((resolve, reject) => {
@@ -118,6 +120,7 @@ class Sagi {
       req.setPlayedTime(playedTime);
       req.setTotalTime(totalTime);
       req.setDelay(delay);
+      req.setHints(hints);
       req.setPayload(payload);
       client.pushData(req, (err, res) => {
         if (err) reject(err);
@@ -133,6 +136,7 @@ class Sagi {
     playedTime,
     totalTime,
     delay,
+    hints,
     transcriptIdentity,
   ) {
     return new Promise((resolve, reject) => {
@@ -144,6 +148,7 @@ class Sagi {
       req.setPlayedTime(playedTime);
       req.setTotalTime(totalTime);
       req.setDelay(delay);
+      req.setHints(hints);
       req.setTranscriptIdentity(transcriptIdentity);
       client.pushData(req, (err, res) => {
         if (err) reject(err);
@@ -160,6 +165,7 @@ class Sagi {
       playedTime,
       totalTime,
       delay,
+      hints,
       transcriptIdentity,
       payload,
     } = transcriptInfo;
@@ -174,6 +180,7 @@ class Sagi {
           playedTime,
           totalTime,
           delay,
+          hints,
           payload,
         ).then((res) => {
           const resAsObject = res.toObject();
@@ -188,6 +195,7 @@ class Sagi {
           playedTime,
           totalTime,
           delay,
+          hints,
           transcriptIdentity,
         ).then((res) => {
           const resAsObject = res.toObject();

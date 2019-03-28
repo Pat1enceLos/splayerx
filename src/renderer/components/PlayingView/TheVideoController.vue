@@ -14,19 +14,25 @@
     <notification-bubble ref="nextVideoUI"/>
     <recent-playlist class="recent-playlist" ref="recentPlaylist"
     :displayState="displayState['recent-playlist']"
-    :mousemovePosition="mousemovePosition"
+    :mousemoveClientPosition="mousemoveClientPosition"
     :isDragging="isDragging"
     :lastDragging.sync="lastDragging"
     v-bind.sync="widgetsStatus['recent-playlist']"
     @conflict-resolve="conflictResolve"
     @update:playlistcontrol-showattached="updatePlaylistShowAttached"/>
-    <div class="masking" v-fade-in="showAllWidgets"/>
+    <div class="masking" v-fade-in="showAllWidgets || progressTriggerStopped"/>
     <play-button class="play-button no-drag"
-      :mousemovePosition="mousemovePosition"
+      @update:playbutton-state="updatePlayButtonState"
+      :mousedownOnVolume="mousedownOnVolume"
+      :mousemovePosition="mousemoveClientPosition"
       :showAllWidgets="showAllWidgets" :isFocused="isFocused"
       :paused="paused" :attachedShown="attachedShown"/>
-    <volume-indicator :showAllWidgets="showAllWidgets" />
-    <div class="control-buttons" v-fade-in="showAllWidgets">
+    <volume-indicator class="no-drag"
+      @update:volume-state="updateVolumeState"
+      :attachedShown="attachedShown"
+      :mousedownOnPlayButton="mousedownOnPlayButton"
+      :showAllWidgets="showAllWidgets"/>
+    <div class="control-buttons" v-fade-in="showAllWidgets" :style="{ marginBottom: preFullScreen ? '10px' : '0' }">
       <playlist-control class="button playlist" v-fade-in="displayState['playlist-control']" v-bind.sync="widgetsStatus['playlist-control']"/>
       <subtitle-control class="button subtitle" v-fade-in="displayState['subtitle-control']"
       v-bind.sync="widgetsStatus['subtitle-control']" :lastDragging.sync="lastDragging"
@@ -35,13 +41,14 @@
       v-bind.sync="widgetsStatus['advance-control']" :lastDragging.sync="lastDragging"
       @conflict-resolve="conflictResolve"/>
     </div>
-    <the-time-codes ref="theTimeCodes" :showAllWidgets="showAllWidgets" />
-    <the-progress-bar ref="progressbar" :showAllWidgets="showAllWidgets" />
+    <the-time-codes ref="theTimeCodes" :progressTriggerStopped.sync="progressTriggerStopped" :showAllWidgets="showAllWidgets" :style="{ marginBottom: preFullScreen ? '10px' : '0' }"/>
+    <the-progress-bar ref="progressbar" :showAllWidgets="showAllWidgets" :style="{ marginBottom: preFullScreen ? '10px' : '0' }"/>
   </div>
 </template>
 <script>
 import { mapState, mapGetters, mapActions } from 'vuex';
 import { Input as inputActions } from '@/store/actionTypes';
+import path from 'path';
 import Titlebar from '../Titlebar.vue';
 import PlayButton from './PlayButton.vue';
 import VolumeIndicator from './VolumeIndicator.vue';
@@ -99,6 +106,16 @@ export default {
       videoChangedTimer: 0,
       isValidClick: true,
       lastMousedownPlaybutton: false,
+      playButton: null, // Play Button on Touch Bar
+      timeLabel: null, // Time Label which indicates the current time
+      scrubber: null,
+      touchBar: null,
+      lastMousedownVolume: false,
+      mousedownOnPlayButton: false,
+      mousedownOnVolume: false,
+      preFullScreen: false,
+      dragOver: false,
+      progressTriggerStopped: false,
     };
   },
   computed: {
@@ -106,13 +123,10 @@ export default {
       currentWidget: ({ Input }) => Input.mousemoveComponentName,
       currentMouseupWidget: state => state.Input.mouseupComponentName,
       currentMousedownWidget: state => state.Input.mousedownComponentName,
-      mousemovePosition: state => state.Input.mousemoveClientPosition,
+      mousemoveClientPosition: state => state.Input.mousemoveClientPosition,
       wheelTime: state => state.Input.wheelTimestamp,
     }),
-    ...mapGetters(['paused', 'duration', 'leftMousedown', 'ratio', 'playingList', 'originSrc', 'isFocused', 'isMinimized']),
-    onlyOneVideo() {
-      return this.playingList.length === 1;
-    },
+    ...mapGetters(['paused', 'duration', 'isFullScreen', 'leftMousedown', 'ratio', 'playingList', 'originSrc', 'isFocused', 'isMinimized', 'isFullScreen', 'intrinsicWidth', 'intrinsicHeight']),
     showAllWidgets() {
       return !this.tempRecentPlaylistDisplayState &&
         ((!this.mouseStopped && !this.mouseLeftWindow) ||
@@ -121,7 +135,7 @@ export default {
         (this.isMousedown && this.currentMousedownWidget === 'play-button'));
     },
     onOtherWidget() {
-      return (this.currentWidget !== this.$options.name) && (this.currentWidget !== 'play-button');
+      return (this.currentWidget !== this.$options.name) && (this.currentWidget !== 'play-button') && (this.currentWidget !== 'volume-indicator');
     },
     cursorStyle() {
       return this.showAllWidgets || !this.isFocused ||
@@ -180,13 +194,33 @@ export default {
     ratio() {
       this.updateMinimumSize();
     },
+    isFullScreen(val) {
+      if (this.touchBar) {
+        if (!val) {
+          this.touchBar.escapeItem.icon = this.createIcon('touchBar/fullscreen.png');
+        } else {
+          this.touchBar.escapeItem.icon = this.createIcon('touchBar/resize.png');
+        }
+      }
+    },
+    paused(val) {
+      if (this.playButton) {
+        if (val) {
+          this.playButton.icon = this.createIcon('touchBar/play.png');
+        } else {
+          this.playButton.icon = this.createIcon('touchBar/pause.png');
+        }
+      }
+    },
   },
   mounted() {
+    this.preFullScreen = this.isFullScreen;
+    this.createTouchBar();
     this.UIElements = this.getAllUIComponents(this.$refs.controller);
     this.UIElements.forEach((value) => {
       this.displayState[value.name] = true;
       if (value.name === 'recent-playlist') this.displayState[value.name] = false;
-      if (value.name === 'playlist-control' && this.onlyOneVideo) {
+      if (value.name === 'playlist-control' && !this.playingList.length) {
         this.displayState['playlist-control'] = false;
       }
       this.widgetsStatus[value.name] = {
@@ -197,7 +231,33 @@ export default {
         hovering: false,
       };
     });
-
+    this.$bus.$on('drag-over', () => {
+      this.dragOver = true;
+    });
+    this.$bus.$on('drag-leave', () => {
+      this.dragOver = false;
+    });
+    this.$bus.$on('drop', () => {
+      this.dragOver = false;
+    });
+    this.$bus.$on('to-fullscreen', () => {
+      if (process.platform === 'darwin' &&
+        this.intrinsicWidth / this.intrinsicHeight > window.screen.width / window.screen.height) {
+        this.preFullScreen = true;
+      }
+    });
+    this.$bus.$on('toggle-fullscreen', () => {
+      if (process.platform === 'darwin' &&
+        this.intrinsicWidth / this.intrinsicHeight > window.screen.width / window.screen.height) {
+        this.preFullScreen = !this.preFullScreen;
+      }
+    });
+    this.$bus.$on('off-fullscreen', () => {
+      if (process.platform === 'darwin' &&
+        this.intrinsicWidth / this.intrinsicHeight > window.screen.width / window.screen.height) {
+        this.preFullScreen = false;
+      }
+    });
     document.addEventListener('keydown', this.handleKeydown);
     document.addEventListener('keyup', this.handleKeyup);
     document.addEventListener('wheel', this.handleWheel);
@@ -211,6 +271,44 @@ export default {
       updateKeyup: inputActions.KEYUP_UPDATE,
       updateWheel: inputActions.WHEEL_UPDATE,
     }),
+    createIcon(iconPath) {
+      const { nativeImage } = this.$electron.remote;
+      return nativeImage.createFromPath(path.join(__static, iconPath)).resize({
+        width: 20,
+      });
+    },
+    createTouchBar() {
+      const { TouchBar } = this.$electron.remote;
+      const {
+        TouchBarLabel, TouchBarButton,
+        TouchBarSpacer,
+      } = TouchBar;
+
+      this.timeLabel = new TouchBarLabel();
+
+      this.playButton = new TouchBarButton({
+        icon: this.createIcon('touchBar/pause.png'),
+        click: () => {
+          this.$bus.$emit('toggle-playback');
+        },
+      });
+      const fullScreenBar = new TouchBarButton({
+        icon: this.createIcon('touchBar/fullscreen.png'),
+        click: () => {
+          this.$bus.$emit('toggle-fullscreen');
+        },
+      });
+      this.touchBar = new TouchBar({
+        items: [
+          this.playButton,
+          new TouchBarSpacer({ size: 'large' }),
+          this.timeLabel,
+          new TouchBarSpacer({ size: 'large' }),
+        ],
+        escapeItem: fullScreenBar,
+      });
+      this.$electron.remote.getCurrentWindow().setTouchBar(this.touchBar);
+    },
     updateMinimumSize() {
       const minimumSize = this.tempRecentPlaylistDisplayState
         ? [512, Math.round(512 / this.ratio)]
@@ -226,6 +324,12 @@ export default {
     },
     updatePlaylistShowAttached(event) {
       this.widgetsStatus['playlist-control'].showAttached = event;
+    },
+    updatePlayButtonState(mousedownState) {
+      this.mousedownOnPlayButton = mousedownState;
+    },
+    updateVolumeState(mousedownState) {
+      this.mousedownOnVolume = mousedownState;
     },
     onTickUpdate() {
       if (!this.start) {
@@ -265,6 +369,7 @@ export default {
             this.$refs.recentPlaylist.updatelastPlayedTime(videodata.time);
           } else {
             this.$refs.theTimeCodes.updateTimeContent(videodata.time);
+            this.timeLabel.label = this.timecodeFromSeconds(Math.floor(videodata.time));
             if (this.needResetHoverProgressBar) {
               this.needResetHoverProgressBar = false;
               // reset hover-progressbar state
@@ -283,8 +388,8 @@ export default {
       Object.keys(this.displayState).forEach((index) => {
         tempObject[index] = !this.widgetsStatus['playlist-control'].showAttached;
       });
-      tempObject['recent-playlist'] = this.widgetsStatus['playlist-control'].showAttached;
-      tempObject['playlist-control'] = !this.onlyOneVideo;
+      tempObject['recent-playlist'] = this.widgetsStatus['playlist-control'].showAttached && !this.dragOver;
+      tempObject['playlist-control'] = !(this.playingList.length === 0);
       this.displayState = tempObject;
       this.tempRecentPlaylistDisplayState = this.widgetsStatus['playlist-control'].showAttached;
     },
@@ -367,14 +472,15 @@ export default {
     handleMousedownLeft(e) {
       this.isMousedown = true;
       this.lastMousedownPlaybutton = this.getComponentName(e.target) === 'play-button';
-      if (this.lastMousedownPlaybutton) {
+      this.lastMousedownVolume = this.getComponentName(e.target) === 'volume-indicator';
+      if (this.lastMousedownPlaybutton || this.lastMousedownVolume) {
         this.mouseStopped = false;
         if (this.mouseStoppedId) {
           this.clock.clearTimeout(this.mouseStoppedId);
         }
       }
     },
-    handleMouseupLeft() {
+    handleMouseupLeft() { // eslint-disable-line complexity
       this.isMousemove = false;
       this.isValidClick = true;
       this.clicks += 1;
@@ -387,11 +493,12 @@ export default {
         this.clicks = 0;
         return;
       }
-      if (this.isMousedown && this.lastMousedownPlaybutton) {
+      if (this.isMousedown && (this.lastMousedownPlaybutton || this.lastMousedownVolume)) {
         this.mouseStoppedId = this.clock.setTimeout(() => {
           this.mouseStopped = true;
         }, this.mousestopDelay);
         this.lastMousedownPlaybutton = false;
+        this.lastMousedownVolume = false;
       }
       this.isMousedown = false;
       if (this.clicks === 1) {
@@ -497,7 +604,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 101;
+  z-index: 99;
 }
 .masking {
   position: absolute;

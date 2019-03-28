@@ -84,6 +84,14 @@ describe('helper - subtitle - push', () => {
             done();
           }).catch(done);
       });
+      it('should subtitle be added no matter what when adding manually', (done) => {
+        testTQueue.subtitleState[testSubtitleId] = 'loading';
+        testTQueue.add(testSubtitle, true)
+          .then(() => {
+            expect(addStub).to.have.been.called;
+            done();
+          }).catch(done);
+      });
       it('should subtitle be ignored when the successful same exists', (done) => {
         testTQueue.subtitleState[testSubtitleId] = 'successful';
         testTQueue.add(testSubtitle)
