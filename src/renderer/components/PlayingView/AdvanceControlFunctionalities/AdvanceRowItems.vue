@@ -192,8 +192,11 @@ export default {
     this.$bus.$on('card-init-left', () => {
       setTimeout(() => {
         if (this.isRateMenu) {
-          this.selectedIndex = 1;
-          this.calculateSpeedLength(1);
+          const rateIndex = this.lists.indexOf(this.rate);
+          if (rateIndex !== -1) {
+            this.selectedIndex = rateIndex;
+            this.calculateSpeedLength(rateIndex);
+          }
         } else {
           this.handleClick(this.chosenSize);
         }
@@ -226,12 +229,9 @@ export default {
       this.selectedIndex = index;
       if (this.isRateMenu) {
         this.calculateSpeedLength(index);
-      } else {
-        this.calculateFontLength(index);
-      }
-      if (this.isRateMenu) {
         this.changeRate(this.lists[index]);
       } else {
+        this.calculateFontLength(index);
         this.changeFontSize(index);
       }
     },
