@@ -6,31 +6,34 @@
       backgroundImage: !isChosen ? '' :
         'linear-gradient(90deg, rgba(255,255,255,0.03) ' +
         '0%, rgba(255,255,255,0.07) 24%, rgba(255,255,255,0.03) 100%)',
+      marginTop: rowType === rowTypeEnum.RATE ? '8px' : ''
     }"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
   >
     <div
       class="detail"
       :style="{
-        height: heightSize,
+        backgroundImage: !isChosen && hoveredText ?
+          'linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.045) 20%, ' +
+          'rgba(255,255,255,0.00) 78%, rgba(255,255,255,0.00) 100%)' : '',
+        transition: 'opacity 200ms',
       }"
     >
       <div
         class="textContainer"
         :style="{
           cursor: isChosen ? 'default' : 'pointer',
+          color: !isChosen && hoveredText ?
+            'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
+          transition: 'color 300ms',
         }"
       >
-        <div
-          class="textItem advanceNormalTitle"
-          :style="{
-            color: color,
-            transition: 'color 300ms',
-          }"
-        >
-          {{ item }}
+        <div class="textItem advanceNormalTitle">
+          {{ rowType === rowTypeEnum.RATE ? $t('advance.rateTitle') : $t('advance.fontSize') }}
         </div>
         <div
-          v-show="!isChosen || isRateMenu"
+          v-show="!isChosen || rowType === rowTypeEnum.RATE"
           class="rightItem advanceNormalItem"
         >
           {{ showDetail }}
@@ -69,7 +72,7 @@
               </p>
             </div>
             <div
-              v-show="!isRateMenu || lists.includes(rate)"
+              v-show="rowType !== rowTypeEnum.RATE || lists.includes(rate)"
               :class="cardType"
               :style="{
                 left: `${moveLength}px`,
@@ -97,12 +100,12 @@ export default {
       require: true,
       default: () => [],
     },
-    item: {
-      type: String,
-      required: true,
+    rate: {
+      type: Number,
+      default: 1,
     },
-    color: {
-      type: String,
+    cardWidth: {
+      type: Number,
       required: true,
     },
     isChosen: {
@@ -112,16 +115,13 @@ export default {
       type: Number,
       required: true,
     },
-    isRateMenu: {
-      type: Boolean,
-    },
-    chosenSizeContent: {
+    rowType: {
       type: String,
       required: true,
     },
-    cardWidth: {
-      type: Number,
-      required: true,
+    chosenSizeContent: {
+      type: String,
+      default: 'Normal',
     },
   },
   data() {
@@ -129,30 +129,35 @@ export default {
       hoverIndex: -1,
       selectedIndex: 1,
       moveLength: '',
+      hoveredText: false,
+      rowTypeEnum: {
+        RATE: 'rate',
+        FONTSIZE: 'fontSize',
+      },
     };
   },
   computed: {
-    ...mapGetters(['rate', 'chosenSize', 'computedHeight', 'computedWidth', 'subToTop',
+    ...mapGetters(['chosenSize', 'computedHeight', 'computedWidth', 'subToTop',
       'winRatio', 'lastChosenSize']),
     computedSize() {
       return this.winRatio >= 1 ? this.computedHeight : this.computedWidth;
     },
     showDetail() {
-      if (this.isRateMenu) {
+      if (this.rowType === this.rowTypeEnum.RATE) {
         return `${this.rate} x`;
-      } else if (!this.isRateMenu) {
+      } else if (this.rowType !== this.rowTypeEnum.RATE) {
         return `${this.chosenSizeContent}`;
       }
       return null;
     },
     cardType() {
       if (this.selectedIndex === this.difIndex[0] || this.selectedIndex === this.difIndex[1]) {
-        if (this.isRateMenu) {
+        if (this.rowType === this.rowTypeEnum.RATE) {
           return 'speedCard smallSpeedCard';
         }
         return 'fontCard smallFontCard';
       }
-      if (this.isRateMenu) {
+      if (this.rowType === this.rowTypeEnum.RATE) {
         return 'speedCard bigSpeedCard';
       }
       return 'fontCard bigFontCard';
@@ -166,24 +171,25 @@ export default {
       return this.isChosen ? `${74 * 1.2 * 1.4}px` : `${37 * 1.2 * 1.4}px`;
     },
     rowNumDetail() {
-      return !this.isRateMenu ? 'fontRowNumDetail' : 'speedRowNumDetail';
+      return this.rowType !== this.rowTypeEnum.RATE ? 'fontRowNumDetail' : 'speedRowNumDetail';
     },
     difIndex() {
-      return !this.isRateMenu ? [0, 2] : [1, 4];
+      return this.rowType !== this.rowTypeEnum.RATE ? [0, 2] : [1, 4];
     },
     difWidth() {
       if (this.size >= 289 && this.size <= 480) {
-        return !this.isRateMenu ? [23, 27] : [18.5, 23];
+        return this.rowType !== this.rowTypeEnum.RATE ? [23, 27] : [18.5, 23];
       } else if (this.size >= 481 && this.size < 1080) {
-        return !this.isRateMenu ? [23 * 1.2, 27 * 1.2] : [18.5 * 1.2, 23 * 1.2];
+        return this.rowType !== this.rowTypeEnum.RATE ?
+          [23 * 1.2, 27 * 1.2] : [18.5 * 1.2, 23 * 1.2];
       }
-      return !this.isRateMenu ? [23 * 1.2 * 1.4, 27 * 1.2 * 1.4] :
+      return this.rowType !== this.rowTypeEnum.RATE ? [23 * 1.2 * 1.4, 27 * 1.2 * 1.4] :
         [18.5 * 1.2 * 1.4, 23 * 1.2 * 1.4];
     },
   },
   watch: {
     subToTop(val) {
-      if (!this.isRateMenu) {
+      if (this.rowType !== this.rowTypeEnum.RATE) {
         if (val) {
           this.updateLastSubSize(this.chosenSize);
           this.handleClick(0);
@@ -193,14 +199,14 @@ export default {
       }
     },
     rate(val) {
-      if (this.isRateMenu) {
+      if (this.rowType === this.rowTypeEnum.RATE) {
         const numList = [0.5, 1, 1.2, 1.5, 2];
         this.selectedIndex = numList.indexOf(val);
         this.calculateSpeedLength(numList.indexOf(val));
       }
     },
     chosenSize(val) {
-      if (!this.isRateMenu) {
+      if (this.rowType !== this.rowTypeEnum.RATE) {
         this.selectedIndex = val;
         this.calculateFontLength(val);
       }
@@ -214,20 +220,9 @@ export default {
         this.updateMobileVideoScaleByFactors(this.chosenSize);
       }
     },
-  },
-  created() {
-    asyncStorage.get('subtitle-style').then((data) => {
-      if (data.chosenSize) {
-        if (!this.isRateMenu) {
-          this.handleClick(data.chosenSize);
-        }
-      }
-    });
-  },
-  mounted() {
-    this.$bus.$on('card-init-left', () => {
+    cardWidth() {
       setTimeout(() => {
-        if (this.isRateMenu) {
+        if (this.rowType === this.rowTypeEnum.RATE) {
           const rateIndex = this.lists.indexOf(this.rate);
           if (rateIndex !== -1) {
             this.selectedIndex = rateIndex;
@@ -237,7 +232,18 @@ export default {
           this.handleClick(this.chosenSize);
         }
       }, 0);
+    },
+  },
+  created() {
+    asyncStorage.get('subtitle-style').then((data) => {
+      if (data.chosenSize) {
+        if (this.rowType !== this.rowTypeEnum.RATE) {
+          this.handleClick(data.chosenSize);
+        }
+      }
     });
+  },
+  mounted() {
     this.$bus.$on('change-size-by-menu', (index) => {
       this.changeFontSize(index);
     });
@@ -249,8 +255,14 @@ export default {
       updateSubSize: subtitleActions.UPDATE_SUBTITLE_SIZE,
       updateLastSubSize: subtitleActions.UPDATE_LAST_SUBTITLE_SIZE,
     }),
+    handleMouseEnter() {
+      this.hoveredText = true;
+    },
+    handleMouseLeave() {
+      this.hoveredText = false;
+    },
     itemChosen(index) {
-      if (this.isRateMenu) {
+      if (this.rowType === this.rowTypeEnum.RATE) {
         return [0.5, 1, 1.2, 1.5, 2].indexOf(this.rate) === index;
       }
       return this.chosenSize === index;
@@ -263,7 +275,7 @@ export default {
     },
     handleClick(index) {
       this.selectedIndex = index;
-      if (this.isRateMenu) {
+      if (this.rowType === this.rowTypeEnum.RATE) {
         this.calculateSpeedLength(index);
         this.changeRate(this.lists[index]);
       } else {
@@ -493,7 +505,6 @@ screen and (min-aspect-ratio: 1/1) and (min-height: 1080px) {
   }
 }
 .itemContainer {
-  position: absolute;
   display: flex;
   border-radius: 7px;
   z-index: 10;

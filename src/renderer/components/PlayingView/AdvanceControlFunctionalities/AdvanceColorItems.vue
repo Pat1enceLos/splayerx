@@ -10,17 +10,22 @@
     @mouseenter="handleSubMouseEnter()"
     @mouseleave="handleSubMouseLeave()"
   >
-    <div class="detail">
+    <div
+      class="detail"
+      :style="{
+        backgroundImage: !isChosen && hoveredText ?
+          'linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.045) 20%, ' +
+          'rgba(255,255,255,0.00) 78%, rgba(255,255,255,0.00) 100%)' : '',
+        transition: 'opacity 200ms',
+      }"
+    >
       <div
         class="textContainer"
         :style="{
           color: !isChosen && hoveredText ?
             'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
-          transition: 'color 300ms, opacity 200ms',
+          transition: 'color 300ms',
           cursor: isChosen ? 'default' : 'pointer',
-          backgroundImage: !isChosen && hoveredText ?
-            'linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.045) 20%, ' +
-            'rgba(255,255,255,0.00) 78%, rgba(255,255,255,0.00) 100%)' : ''
         }"
       >
         <div class="textItem advanceNormalTitle">

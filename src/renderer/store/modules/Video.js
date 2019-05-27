@@ -85,7 +85,7 @@ const getters = {
   audioTrackList: state => state.audioTrackList,
   currentAudioTrackId: (state) => {
     const track = state.audioTrackList.filter(track => track.enabled)[0];
-    if (track && track.id) return track.id;
+    if (track && track.id) return Number(track.id);
     return -1;
   },
   // meta info

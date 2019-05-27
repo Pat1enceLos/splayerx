@@ -7,27 +7,35 @@
         'linear-gradient(90deg, rgba(255,255,255,0.03) ' +
         '0%, rgba(255,255,255,0.07) 24%, rgba(255,255,255,0.03) 100%)',
     }"
+    @mouseenter="handleSubMouseEnter"
+    @mouseleave="handleSubMouseLeave"
   >
     <div
       class="detail"
       :style="{
-        height: heightSize,
+        backgroundImage: !isChosen && hoveredText && isSubtitleAvailable ?
+          'linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.045) 20%, ' +
+          'rgba(255,255,255,0.00) 78%, rgba(255,255,255,0.00) 100%)' : '',
+        transition: 'opacity 200ms',
       }"
     >
       <div
         class="textContainer advanceNormalTitle"
         :style="{
-          cursor: isChosen || !isSubDelay || !isSubtitleAvailable ? 'default' : 'pointer',
+          cursor: isChosen || selectedType !== selectedTypeEnum.SUBTITLE || !isSubtitleAvailable ?
+            'default' : 'pointer',
         }"
       >
         <div
           class="textItem"
           :style="{
-            color: isSubtitleAvailable ? color : 'rgba(255, 255, 255, 0.2)',
+            color: !isSubtitleAvailable ? 'rgba(255, 255, 255, 0.2)' : !isChosen && hoveredText ?
+              'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
             transition: 'color 300ms',
           }"
         >
-          {{ item }}
+          {{ selectedType === selectedTypeEnum.SUBTITLE ?
+            $t('advance.subDelay') : $t('advance.audioDelay') }}
         </div>
         <div
           class="rightItem"
@@ -35,7 +43,7 @@
             color: isSubtitleAvailable ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.2)'
           }"
         >
-          {{ isSubDelay ? screenSubtitleDelay : audioDelay }}
+          {{ selectedType === selectedTypeEnum.SUBTITLE ? screenSubtitleDelay : audioDelay }}
         </div>
       </div>
       <transition name="detail">
@@ -86,14 +94,6 @@ export default {
     Icon,
   },
   props: {
-    item: {
-      type: String,
-      required: true,
-    },
-    color: {
-      type: String,
-      required: true,
-    },
     isChosen: {
       type: Boolean,
     },
@@ -101,8 +101,9 @@ export default {
       type: Number,
       required: true,
     },
-    isSubDelay: {
-      type: Boolean,
+    selectedType: {
+      type: String,
+      required: true,
     },
     isSubtitleAvailable: {
       type: Boolean,
@@ -115,6 +116,11 @@ export default {
       changeSpeed: 120,
       timeInset: null,
       timeInInt: null,
+      hoveredText: false,
+      selectedTypeEnum: {
+        SUBTITLE: 'subtitle',
+        AUDIO: 'audio',
+      },
     };
   },
   computed: {
@@ -137,7 +143,7 @@ export default {
       return `${this.AudioDelay} ms`;
     },
     delayNum() {
-      if (this.isSubDelay) {
+      if (this.selectedType === this.selectedTypeEnum.SUBTITLE) {
         return `${this.subtitleDelay / 1000}`;
       }
       if (Math.abs(this.AudioDelay) >= 10000) {
@@ -147,11 +153,17 @@ export default {
     },
   },
   methods: {
+    handleSubMouseEnter() {
+      this.hoveredText = true;
+    },
+    handleSubMouseLeave() {
+      this.hoveredText = false;
+    },
     handleResetDelay() {
       this.$store.dispatch(subtitleActions.UPDATE_SUBTITLE_DELAY, 0);
     },
     handleDeMousedown() {
-      if (this.isSubDelay) {
+      if (this.selectedType === this.selectedTypeEnum.SUBTITLE) {
         const myFunction = () => {
           clearInterval(this.timeDeInt);
           if (this.changeSpeed >= 20) {
@@ -167,14 +179,14 @@ export default {
       }
     },
     handleDeMouseup() {
-      if (this.isSubDelay) {
+      if (this.selectedType === this.selectedTypeEnum.SUBTITLE) {
         this.changeSpeed = 120;
         clearTimeout(this.timeDeSet);
         clearInterval(this.timeDeInt);
       }
     },
     handleInMousedown() {
-      if (this.isSubDelay) {
+      if (this.selectedType === this.selectedTypeEnum.SUBTITLE) {
         const myFunction = () => {
           clearInterval(this.timeInInt);
           if (this.changeSpeed >= 20) {
@@ -190,7 +202,7 @@ export default {
       }
     },
     handleInMouseup() {
-      if (this.isSubDelay) {
+      if (this.selectedType === this.selectedTypeEnum.SUBTITLE) {
         this.changeSpeed = 120;
         clearTimeout(this.timeInSet);
         clearInterval(this.timeInInt);
@@ -363,7 +375,6 @@ screen and (min-aspect-ratio: 1/1) and (min-height: 1080px) {
   }
 }
 .itemContainer {
-  position: absolute;
   display: flex;
   border-radius: 7px;
   z-index: 10;
