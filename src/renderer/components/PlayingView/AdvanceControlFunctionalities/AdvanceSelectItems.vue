@@ -90,10 +90,6 @@ export default {
       type: String,
       required: true,
     },
-    height: {
-      type: Number,
-      required: true,
-    },
     color: {
       type: String,
       required: true,
