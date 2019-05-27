@@ -181,31 +181,13 @@
               'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)'"
           />
         </div>
-        <div
-          class="subtitleStyle"
-          :style="{
-            height: subColorHeight,
-            transition: 'height 100ms linear',
-          }"
-          @click.left="handleColorClick"
-          @mouseenter="handleSubMouseenter(2)"
-          @mouseleave="handleSubMouseleave()"
-        >
-          <transition name="arrow">
-            <div
-              v-show="!subColorChosen && hoverSubIndex === 2"
-              class="hoverBack"
-              :style="{ height: subColorHeight }"
-            />
-          </transition>
-          <advance-color-items
-            :item="$t('advance.fontStyle')"
-            :size="computedSize"
-            :is-chosen="subColorChosen"
-            :color="hoverSubIndex === 2 && !subColorChosen ?
-              'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)'"
-          />
-        </div>
+        <advance-color-items
+          :size="computedSize"
+          :is-chosen="subColorChosen"
+          :change-style="changeStyle"
+          :stored-style="chosenStyle"
+          @click.left.native="handleColorClick"
+        />
         <div
           class="subtitleDelay"
           :style="{
@@ -346,6 +328,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
+import { Subtitle as subtitleActions } from '@/store/actionTypes';
 import AdvanceRowItems from './AdvanceRowItems.vue';
 import BaseInfoCard from '../InfoCard.vue';
 import Icon from '../../BaseIconContainer.vue';
@@ -391,7 +374,7 @@ export default {
   },
   computed: {
     ...mapGetters(['winWidth', 'currentFirstSubtitleId', 'winHeight', 'rate', 'chosenSize',
-      'subtitleDelay', 'displayLanguage', 'winRatio']),
+      'subtitleDelay', 'displayLanguage', 'winRatio', 'chosenStyle']),
     /**
      * @return {string}
      */
@@ -636,6 +619,9 @@ export default {
     },
   },
   methods: {
+    changeStyle(index) {
+      this.$store.dispatch(subtitleActions.UPDATE_SUBTITLE_STYLE, index);
+    },
     initialSize(size) {
       if (this.computedSize >= 289 && this.computedSize <= 480) {
         return size;
