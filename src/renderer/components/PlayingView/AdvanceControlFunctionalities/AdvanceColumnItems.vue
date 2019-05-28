@@ -89,8 +89,7 @@
   </div>
 </template>
 
-<script>
-import { Video as videoActions } from '@/store/actionTypes';
+<script lang="ts">
 
 export default {
   name: 'AdvanceColumnItems',
@@ -111,6 +110,10 @@ export default {
     tracks: {
       type: Array,
       required: true,
+    },
+    switchAudioTrack: {
+      type: Function,
+      default: null,
     },
   },
   data() {
@@ -135,18 +138,15 @@ export default {
     },
   },
   watch: {
-    tracks(val) {
-      val.forEach((item, index) => {
+    tracks(val: Array<{id: string, kind: string, label: string,
+      language: string, name: string, enabled: boolean}>) {
+      val.forEach((item: {id: string, kind: string, label: string,
+        language: string, name: string, enabled: boolean}, index: number) => {
         if (Number(item.id) === this.currentTrackId) {
           this.moveLength = index * 32;
         }
       });
     },
-  },
-  mounted() {
-    this.$bus.$on('switch-audio-track', (index) => {
-      this.handleClick(index);
-    });
   },
   methods: {
     handleAudioMouseenter() {
@@ -155,7 +155,7 @@ export default {
     handleAudioMouseleave() {
       this.hoveredText = false;
     },
-    initialSize(size) {
+    initialSize(size: number) {
       if (this.size >= 289 && this.size <= 480) {
         return size;
       } else if (this.size >= 481 && this.size < 1080) {
@@ -163,15 +163,15 @@ export default {
       }
       return size * 1.2 * 1.4;
     },
-    handleOver(index) {
+    handleOver(index: number) {
       this.hoverIndex = index;
     },
     handleOut() {
       this.hoverIndex = -1;
     },
-    handleClick(index) {
+    handleClick(index: number) {
       this.moveLength = index * 32;
-      this.$store.dispatch(videoActions.SWITCH_AUDIO_TRACK, this.tracks[index]);
+      this.switchAudioTrack(this.tracks[index]);
     },
   },
 };
@@ -324,7 +324,7 @@ screen and (min-aspect-ratio: 1/1) and (min-height: 1080px) {
         border-radius: 7px;
         opacity: 0.4;
         border: 0.5px solid rgba(255, 255, 255, 0.20);
-        box-shadow: 0px 1px 2px rgba(0, 0, 0, .2);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
         background-image: radial-gradient(60% 134%,
           rgba(255, 255, 255, 0.09) 44%, rgba(255, 255, 255, 0.05) 100%);
       }

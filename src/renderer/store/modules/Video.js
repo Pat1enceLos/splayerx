@@ -53,7 +53,7 @@ const state = {
   intrinsicWidth: 0,
   intrinsicHeight: 0,
   ratio: 0,
-  AudioDelay: 0,
+  audioDelay: 0,
   defaultDir: '',
   snapshotSavedPath: '',
 };
@@ -108,7 +108,7 @@ const getters = {
       getters.winWidth / (1 / getters.ratio) : getters.winHeight);
   },
   ratio: state => state.ratio,
-  AudioDelay: state => state.AudioDelay,
+  audioDelay: state => state.audioDelay,
   mediaHash: state => state.mediaHash,
   videoId: state => state.id,
   defaultDir: state => state.defaultDir,

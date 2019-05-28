@@ -115,6 +115,10 @@ export default {
       type: Number,
       required: true,
     },
+    computedSize: {
+      type: Number,
+      required: true,
+    },
     rowType: {
       type: String,
       required: true,
@@ -137,11 +141,7 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['chosenSize', 'computedHeight', 'computedWidth', 'subToTop',
-      'winRatio', 'lastChosenSize']),
-    computedSize() {
-      return this.winRatio >= 1 ? this.computedHeight : this.computedWidth;
-    },
+    ...mapGetters(['chosenSize', 'subToTop', 'winRatio', 'lastChosenSize']),
     showDetail() {
       if (this.rowType === this.rowTypeEnum.RATE) {
         return `${this.rate} x`;

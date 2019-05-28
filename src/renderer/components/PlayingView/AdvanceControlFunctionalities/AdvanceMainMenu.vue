@@ -27,6 +27,7 @@
           :rate="rate"
           row-type="rate"
           :size="computedSize"
+          :computed-size="computedVideoSize"
           :is-chosen="speedChosen"
           @click.left.native="handleClick"
         />
@@ -131,6 +132,7 @@
           row-type="fontSize"
           :lists="$t('advance.fontItems')"
           :size="computedSize"
+          :computed-size="computedVideoSize"
           :is-chosen="subSizeChosen"
           @click.left.native="handleSizeClick"
         />
@@ -144,8 +146,10 @@
         <advance-selected-items
           :is-subtitle-available="isSubtitleAvailable"
           selected-type="subtitle"
+          :change-subtitle-delay="changeSubtitleDelay"
           :size="computedSize"
           :is-chosen="subDelayChosen"
+          :subtitle-delay="subtitleDelay"
           @click.left.native="handleDelayClick"
         />
       </div>
@@ -181,6 +185,7 @@
           :size="computedSize"
           selected-type="audio"
           :is-chosen="showDelay"
+          :audio-delay="audioDelay"
           @click.left.native="1"
         />
         <advance-column-items
@@ -189,6 +194,7 @@
           :current-track-name="currentAudioTrack"
           :current-track-id="currentAudioTrackId"
           :tracks="audioTrackList"
+          :switch-audio-track="switchAudioTrack"
           @click.left.native="handleTrackClick"
         />
       </div>
@@ -198,7 +204,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import { Subtitle as subtitleActions } from '@/store/actionTypes';
+import { Subtitle as subtitleActions, Video as videoActions } from '@/store/actionTypes';
 import AdvanceRowItems from './AdvanceRowItems.vue';
 import BaseInfoCard from '../InfoCard.vue';
 import Icon from '../../BaseIconContainer.vue';
@@ -233,7 +239,6 @@ export default {
       subSizeChosen: false,
       subColorChosen: false,
       subDelayChosen: false,
-      hoverSubIndex: -1,
       showDelay: false,
       showTrack: false,
       hoverAudioIndex: -1,
@@ -244,7 +249,8 @@ export default {
   },
   computed: {
     ...mapGetters(['winWidth', 'currentFirstSubtitleId', 'winHeight', 'rate', 'chosenSize',
-      'subtitleDelay', 'displayLanguage', 'winRatio', 'chosenStyle', 'audioTrackList', 'currentAudioTrackId']),
+      'subtitleDelay', 'displayLanguage', 'winRatio', 'chosenStyle', 'audioTrackList', 'currentAudioTrackId',
+      'computedHeight', 'computedWidth', 'audioDelay']),
     /**
      * @return {string}
      */
@@ -388,6 +394,9 @@ export default {
     computedSize() {
       return this.winRatio >= 1 ? this.winHeight : this.winWidth;
     },
+    computedVideoSize() {
+      return this.winRatio >= 1 ? this.computedHeight : this.computedWidth;
+    },
     currentAudioTrack() {
       const track = this.$store.getters.audioTrackList.filter(track => track.enabled)[0];
       if (track) {
@@ -469,7 +478,18 @@ export default {
       }
     },
   },
+  mounted() {
+    this.$bus.$on('switch-audio-track', (index) => {
+      this.switchAudioTrack(this.audioTrackList[index]);
+    });
+  },
   methods: {
+    switchAudioTrack(track) {
+      this.$store.dispatch(videoActions.SWITCH_AUDIO_TRACK, track);
+    },
+    changeSubtitleDelay(num) {
+      this.$store.dispatch(subtitleActions.UPDATE_SUBTITLE_DELAY, num);
+    },
     changeStyle(index) {
       this.$store.dispatch(subtitleActions.UPDATE_SUBTITLE_STYLE, index);
     },
@@ -510,27 +530,18 @@ export default {
     handleSubBackLeave() {
       this.backSubHover = false;
     },
-    handleSubMouseenter(index) {
-      this.hoverSubIndex = index;
-    },
-    handleSubMouseleave() {
-      this.hoverSubIndex = -1;
-    },
     handleSizeClick() {
-      this.hoverSubIndex = -1;
       this.subSizeChosen = true;
       this.subDelayChosen = false;
       this.subColorChosen = false;
     },
     handleColorClick() {
-      this.hoverSubIndex = -1;
       this.subColorChosen = true;
       this.subSizeChosen = false;
       this.subDelayChosen = false;
     },
     handleDelayClick() {
       if (this.isSubtitleAvailable) {
-        this.hoverSubIndex = -1;
         this.subDelayChosen = true;
         this.subSizeChosen = false;
         this.subColorChosen = false;

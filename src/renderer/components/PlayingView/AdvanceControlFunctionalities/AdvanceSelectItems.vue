@@ -43,7 +43,7 @@
             color: isSubtitleAvailable ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.2)'
           }"
         >
-          {{ selectedType === selectedTypeEnum.SUBTITLE ? screenSubtitleDelay : audioDelay }}
+          {{ selectedType === selectedTypeEnum.SUBTITLE ? screenSubtitleDelay : screenAudioDelay }}
         </div>
       </div>
       <transition name="detail">
@@ -83,9 +83,8 @@
   </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex';
-import { Subtitle as subtitleActions } from '@/store/actionTypes';
+<script lang="ts">
+// @ts-ignore
 import Icon from '../../BaseIconContainer.vue';
 
 export default {
@@ -108,13 +107,25 @@ export default {
     isSubtitleAvailable: {
       type: Boolean,
     },
+    subtitleDelay: {
+      type: Number,
+      default: 0,
+    },
+    audioDelay: {
+      type: Number,
+      default: 0,
+    },
+    changeSubtitleDelay: {
+      type: Function,
+      default: null,
+    },
   },
   data() {
     return {
       timeDeSet: null,
       timeDeInt: null,
       changeSpeed: 120,
-      timeInset: null,
+      timeInSet: null,
       timeInInt: null,
       hoveredText: false,
       selectedTypeEnum: {
@@ -124,7 +135,6 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['subtitleDelay', 'AudioDelay']),
     heightSize() {
       if (this.size >= 289 && this.size <= 480) {
         return this.isChosen ? '74px' : '37px';
@@ -136,20 +146,20 @@ export default {
     screenSubtitleDelay() {
       return `${this.subtitleDelay / 1000} s`;
     },
-    audioDelay() {
-      if (Math.abs(this.AudioDelay) >= 10000) {
-        return `${this.AudioDelay / 1000} s`;
+    screenAudioDelay() {
+      if (Math.abs(this.audioDelay) >= 10000) {
+        return `${this.audioDelay / 1000} s`;
       }
-      return `${this.AudioDelay} ms`;
+      return `${this.audioDelay} ms`;
     },
     delayNum() {
       if (this.selectedType === this.selectedTypeEnum.SUBTITLE) {
         return `${this.subtitleDelay / 1000}`;
       }
-      if (Math.abs(this.AudioDelay) >= 10000) {
-        return `${this.AudioDelay / 1000}`;
+      if (Math.abs(this.audioDelay) >= 10000) {
+        return `${this.audioDelay / 1000}`;
       }
-      return this.AudioDelay;
+      return this.audioDelay;
     },
   },
   methods: {
@@ -160,21 +170,21 @@ export default {
       this.hoveredText = false;
     },
     handleResetDelay() {
-      this.$store.dispatch(subtitleActions.UPDATE_SUBTITLE_DELAY, 0);
+      this.changeSubtitleDelay(0);
     },
     handleDeMousedown() {
       if (this.selectedType === this.selectedTypeEnum.SUBTITLE) {
-        const myFunction = () => {
+        const decrease = (): void => {
           clearInterval(this.timeDeInt);
           if (this.changeSpeed >= 20) {
             this.changeSpeed -= 2;
           }
-          this.$store.dispatch(subtitleActions.UPDATE_SUBTITLE_DELAY, -0.1);
-          this.timeDeInt = setInterval(myFunction, this.changeSpeed);
+          this.changeSubtitleDelay(-0.1);
+          this.timeDeInt = setInterval(decrease, this.changeSpeed);
         };
-        this.$store.dispatch(subtitleActions.UPDATE_SUBTITLE_DELAY, -0.1);
+        this.changeSubtitleDelay(-0.1);
         this.timeDeSet = setTimeout(() => {
-          myFunction(myFunction, this.changeSpeed);
+          decrease();
         }, 500);
       }
     },
@@ -187,17 +197,17 @@ export default {
     },
     handleInMousedown() {
       if (this.selectedType === this.selectedTypeEnum.SUBTITLE) {
-        const myFunction = () => {
+        const increase = (): void => {
           clearInterval(this.timeInInt);
           if (this.changeSpeed >= 20) {
             this.changeSpeed -= 2;
           }
-          this.$store.dispatch(subtitleActions.UPDATE_SUBTITLE_DELAY, 0.1);
-          this.timeInInt = setInterval(myFunction, this.changeSpeed);
+          this.changeSubtitleDelay(0.1);
+          this.timeInInt = setInterval(increase, this.changeSpeed);
         };
-        this.$store.dispatch(subtitleActions.UPDATE_SUBTITLE_DELAY, 0.1);
+        this.changeSubtitleDelay(0.1);
         this.timeInSet = setTimeout(() => {
-          myFunction(myFunction, this.changeSpeed);
+          increase();
         }, 500);
       }
     },
