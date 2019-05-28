@@ -49,11 +49,11 @@
               v-for="(list, index) in lists"
               :id="'list'+index"
               :key="list"
-              :class="rowNumDetail"
+              class="rowNumDetail"
               :style="{
                 width: index === difIndex[0] || index === difIndex[1] ?
                   `${difWidth[0]}%` : `${difWidth[1]}%`,
-                cursor: itemChosen(index) ? 'default' : 'pointer',
+                cursor: selectedIndex === index ? 'default' : 'pointer',
               }"
               @mouseover="handleOver(index)"
               @mouseout="handleOut(index)"
@@ -62,7 +62,7 @@
               <p
                 class="text"
                 :style="{
-                  color: itemChosen(index) || index === hoverIndex ?
+                  color: selectedIndex === index || index === hoverIndex ?
                     'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
                   margin: 'auto',
                   transition: 'color 300ms',
@@ -89,8 +89,6 @@
 
 <script>
 import asyncStorage from '@/helpers/asyncStorage';
-import { mapGetters, mapActions } from 'vuex';
-import { Video as videoActions, Subtitle as subtitleActions } from '@/store/actionTypes';
 
 export default {
   name: 'AdvanceRowItems',
@@ -101,6 +99,10 @@ export default {
       default: () => [],
     },
     rate: {
+      type: Number,
+      default: 1,
+    },
+    chosenSize: {
       type: Number,
       default: 1,
     },
@@ -115,10 +117,6 @@ export default {
       type: Number,
       required: true,
     },
-    computedSize: {
-      type: Number,
-      required: true,
-    },
     rowType: {
       type: String,
       required: true,
@@ -127,12 +125,18 @@ export default {
       type: String,
       default: 'Normal',
     },
+    changeFontSize: {
+      type: Function,
+      default: null,
+    },
+    changeRate: {
+      type: Function,
+      default: null,
+    },
   },
   data() {
     return {
       hoverIndex: -1,
-      selectedIndex: 1,
-      moveLength: '',
       hoveredText: false,
       rowTypeEnum: {
         RATE: 'rate',
@@ -141,14 +145,11 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['chosenSize', 'subToTop', 'winRatio', 'lastChosenSize']),
     showDetail() {
       if (this.rowType === this.rowTypeEnum.RATE) {
         return `${this.rate} x`;
-      } else if (this.rowType !== this.rowTypeEnum.RATE) {
-        return `${this.chosenSizeContent}`;
       }
-      return null;
+      return `${this.chosenSizeContent}`;
     },
     cardType() {
       if (this.selectedIndex === this.difIndex[0] || this.selectedIndex === this.difIndex[1]) {
@@ -170,9 +171,6 @@ export default {
       }
       return this.isChosen ? `${74 * 1.2 * 1.4}px` : `${37 * 1.2 * 1.4}px`;
     },
-    rowNumDetail() {
-      return this.rowType !== this.rowTypeEnum.RATE ? 'fontRowNumDetail' : 'speedRowNumDetail';
-    },
     difIndex() {
       return this.rowType !== this.rowTypeEnum.RATE ? [0, 2] : [1, 4];
     },
@@ -186,52 +184,19 @@ export default {
       return this.rowType !== this.rowTypeEnum.RATE ? [23 * 1.2 * 1.4, 27 * 1.2 * 1.4] :
         [18.5 * 1.2 * 1.4, 23 * 1.2 * 1.4];
     },
-  },
-  watch: {
-    subToTop(val) {
-      if (this.rowType !== this.rowTypeEnum.RATE) {
-        if (val) {
-          this.updateLastSubSize(this.chosenSize);
-          this.handleClick(0);
-        } else {
-          this.handleClick(this.lastChosenSize);
-        }
-      }
-    },
-    rate(val) {
+    moveLength() {
+      const rateFactors = [17, 46, 71, 100, 129];
+      const fontFactors = [17, 49, 86, 117];
       if (this.rowType === this.rowTypeEnum.RATE) {
-        const numList = [0.5, 1, 1.2, 1.5, 2];
-        this.selectedIndex = numList.indexOf(val);
-        this.calculateSpeedLength(numList.indexOf(val));
+        return (rateFactors[this.selectedIndex] / 170) * this.cardWidth;
       }
+      return (fontFactors[this.selectedIndex] / 170) * this.cardWidth;
     },
-    chosenSize(val) {
-      if (this.rowType !== this.rowTypeEnum.RATE) {
-        this.selectedIndex = val;
-        this.calculateFontLength(val);
+    selectedIndex() {
+      if (this.rowType === this.rowTypeEnum.RATE) {
+        return this.lists.indexOf(this.rate);
       }
-    },
-    computedSize(val) {
-      if (val >= 1080) {
-        this.updateVideoScaleByFactors(val);
-      } else if (this.winRatio >= 1) {
-        this.updatePCVideoScaleByFactors(this.chosenSize);
-      } else if (this.winRatio < 1) {
-        this.updateMobileVideoScaleByFactors(this.chosenSize);
-      }
-    },
-    cardWidth() {
-      setTimeout(() => {
-        if (this.rowType === this.rowTypeEnum.RATE) {
-          const rateIndex = this.lists.indexOf(this.rate);
-          if (rateIndex !== -1) {
-            this.selectedIndex = rateIndex;
-            this.calculateSpeedLength(rateIndex);
-          }
-        } else {
-          this.handleClick(this.chosenSize);
-        }
-      }, 0);
+      return this.chosenSize;
     },
   },
   created() {
@@ -249,23 +214,11 @@ export default {
     });
   },
   methods: {
-    ...mapActions({
-      changeRate: videoActions.CHANGE_RATE,
-      updateSubScale: subtitleActions.UPDATE_SUBTITLE_SCALE,
-      updateSubSize: subtitleActions.UPDATE_SUBTITLE_SIZE,
-      updateLastSubSize: subtitleActions.UPDATE_LAST_SUBTITLE_SIZE,
-    }),
     handleMouseEnter() {
       this.hoveredText = true;
     },
     handleMouseLeave() {
       this.hoveredText = false;
-    },
-    itemChosen(index) {
-      if (this.rowType === this.rowTypeEnum.RATE) {
-        return [0.5, 1, 1.2, 1.5, 2].indexOf(this.rate) === index;
-      }
-      return this.chosenSize === index;
     },
     handleOver(index) {
       this.hoverIndex = index;
@@ -274,79 +227,10 @@ export default {
       this.hoverIndex = -1;
     },
     handleClick(index) {
-      this.selectedIndex = index;
       if (this.rowType === this.rowTypeEnum.RATE) {
-        this.calculateSpeedLength(index);
         this.changeRate(this.lists[index]);
       } else {
-        this.calculateFontLength(index);
         this.changeFontSize(index);
-      }
-    },
-    calculateSpeedLength(index) {
-      switch (index) {
-        case 0:
-          this.moveLength = (17 / 170) * this.cardWidth;
-          break;
-        case 1:
-          this.moveLength = (46 / 170) * this.cardWidth;
-          break;
-        case 2:
-          this.moveLength = (71 / 170) * this.cardWidth;
-          break;
-        case 3:
-          this.moveLength = (100 / 170) * this.cardWidth;
-          break;
-        case 4:
-          this.moveLength = (129 / 170) * this.cardWidth;
-          break;
-        default:
-          break;
-      }
-    },
-    calculateFontLength(index) {
-      switch (index) {
-        case 0:
-          this.moveLength = (17 / 170) * this.cardWidth;
-          break;
-        case 1:
-          this.moveLength = (49 / 170) * this.cardWidth;
-          break;
-        case 2:
-          this.moveLength = (86 / 170) * this.cardWidth;
-          break;
-        case 3:
-          this.moveLength = (117 / 170) * this.cardWidth;
-          break;
-        default:
-          break;
-      }
-    },
-    // update video scale that width is larger than height
-    updatePCVideoScaleByFactors(index) {
-      const firstFactors = [21, 29, 37, 45];
-      const secondFactors = [24, 26, 28, 30];
-      this.updateSubScale(`${(((firstFactors[index] / 900) * this.computedSize) +
-        (secondFactors[index] / 5)) / 9}`);
-    },
-    // update video scale that height is larger than width
-    updateMobileVideoScaleByFactors(index) {
-      const firstFactors = [21, 29, 37, 45];
-      const secondFactors = [12, -92, -196, -300];
-      this.updateSubScale(`${(((firstFactors[index] / 760) * this.computedSize) +
-        (secondFactors[index] / 76)) / 9}`);
-    },
-    // update video scale when width or height is larger than 1080
-    updateVideoScaleByFactors(val) {
-      const factors = [30, 40, 50, 60];
-      this.updateSubScale(`${((val / 1080) * factors[this.chosenSize]) / 9}`);
-    },
-    changeFontSize(index) {
-      this.updateSubSize(index);
-      if (this.winRatio >= 1) {
-        this.updatePCVideoScaleByFactors(index);
-      } else if (this.winRatio < 1) {
-        this.updateMobileVideoScaleByFactors(index);
       }
     },
   },
@@ -536,11 +420,7 @@ screen and (min-aspect-ratio: 1/1) and (min-height: 1080px) {
       .text {
         text-shadow: 0px 1px 1px rgba(0, 0, 0, .1);
       }
-      .speedRowNumDetail {
-        position: relative;
-        display: flex;
-      }
-      .fontRowNumDetail {
+      .rowNumDetail {
         position: relative;
         display: flex;
       }

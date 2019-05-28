@@ -27,7 +27,7 @@
           :rate="rate"
           row-type="rate"
           :size="computedSize"
-          :computed-size="computedVideoSize"
+          :change-rate="changeRate"
           :is-chosen="speedChosen"
           @click.left.native="handleClick"
         />
@@ -132,7 +132,8 @@
           row-type="fontSize"
           :lists="$t('advance.fontItems')"
           :size="computedSize"
-          :computed-size="computedVideoSize"
+          :change-font-size="updateSubSize"
+          :chosen-size="chosenSize"
           :is-chosen="subSizeChosen"
           @click.left.native="handleSizeClick"
         />
@@ -203,7 +204,7 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
+import { mapGetters, mapActions } from 'vuex';
 import { Subtitle as subtitleActions, Video as videoActions } from '@/store/actionTypes';
 import AdvanceRowItems from './AdvanceRowItems.vue';
 import BaseInfoCard from '../InfoCard.vue';
@@ -248,9 +249,9 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['winWidth', 'currentFirstSubtitleId', 'winHeight', 'rate', 'chosenSize',
+    ...mapGetters(['winWidth', 'currentFirstSubtitleId', 'winHeight', 'rate', 'chosenSize', 'subToTop',
       'subtitleDelay', 'displayLanguage', 'winRatio', 'chosenStyle', 'audioTrackList', 'currentAudioTrackId',
-      'computedHeight', 'computedWidth', 'audioDelay']),
+      'computedHeight', 'computedWidth', 'audioDelay', 'lastChosenSize']),
     /**
      * @return {string}
      */
@@ -410,10 +411,6 @@ export default {
       }
       return this.$t('advance.chosenTrack');
     },
-    changeTrackHeight() {
-      return this.showTrack ? `${this.initialSize(this.trackHeight)}px` :
-        `${this.initialSize(37)}px`;
-    },
     menuCardHeight() {
       return this.speedChosen ? `${this.initialSize(164)}px` : `${this.initialSize(127)}px`;
     },
@@ -441,14 +438,32 @@ export default {
       }
       return 230;
     },
-    trackHeight() {
-      if (this.trackNum <= 2) {
-        return (51 + (this.trackNum * 27)) + ((this.trackNum - 1) * 5);
-      }
-      return 142;
-    },
   },
   watch: {
+    subToTop(val) {
+      if (val) {
+        this.updateLastSubSize(this.chosenSize);
+        this.updateSubSize(0);
+      } else {
+        this.updateSubSize(this.lastChosenSize);
+      }
+    },
+    chosenSize(val) {
+      if (this.winRatio >= 1) {
+        this.updatePCVideoScaleByFactors(val);
+      } else if (this.winRatio < 1) {
+        this.updateMobileVideoScaleByFactors(val);
+      }
+    },
+    computedVideoSize(val) {
+      if (val >= 1080) {
+        this.updateVideoScaleByFactors(val);
+      } else if (this.winRatio >= 1) {
+        this.updatePCVideoScaleByFactors(this.chosenSize);
+      } else if (this.winRatio < 1) {
+        this.updateMobileVideoScaleByFactors(this.chosenSize);
+      }
+    },
     displayLanguage() {
       this.cardWidth = this.maxTextLength + (3 * this.subStyleWidth);
     },
@@ -484,6 +499,31 @@ export default {
     });
   },
   methods: {
+    ...mapActions({
+      updateSubScale: subtitleActions.UPDATE_SUBTITLE_SCALE,
+      updateLastSubSize: subtitleActions.UPDATE_LAST_SUBTITLE_SIZE,
+      updateSubSize: subtitleActions.UPDATE_SUBTITLE_SIZE,
+      changeRate: videoActions.CHANGE_RATE,
+    }),
+    // update video scale that width is larger than height
+    updatePCVideoScaleByFactors(index) {
+      const firstFactors = [21, 29, 37, 45];
+      const secondFactors = [24, 26, 28, 30];
+      this.updateSubScale(`${(((firstFactors[index] / 900) * this.computedVideoSize) +
+        (secondFactors[index] / 5)) / 9}`);
+    },
+    // update video scale that height is larger than width
+    updateMobileVideoScaleByFactors(index) {
+      const firstFactors = [21, 29, 37, 45];
+      const secondFactors = [12, -92, -196, -300];
+      this.updateSubScale(`${(((firstFactors[index] / 760) * this.computedVideoSize) +
+        (secondFactors[index] / 76)) / 9}`);
+    },
+    // update video scale when width or height is larger than 1080
+    updateVideoScaleByFactors(val) {
+      const factors = [30, 40, 50, 60];
+      this.updateSubScale(`${((val / 1080) * factors[this.chosenSize]) / 9}`);
+    },
     switchAudioTrack(track) {
       this.$store.dispatch(videoActions.SWITCH_AUDIO_TRACK, track);
     },
