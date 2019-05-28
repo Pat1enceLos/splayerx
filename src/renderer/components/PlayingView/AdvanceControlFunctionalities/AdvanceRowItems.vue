@@ -79,7 +79,8 @@
                 transition: 'left 200ms cubic-bezier(0.17, 0.67, 0.17, 0.98), width 200ms',
                 boxSizing: 'border-box'
               }"
-            />
+            >
+            </div>
           </div>
         </div>
       </transition>
@@ -88,7 +89,6 @@
 </template>
 
 <script>
-import asyncStorage from '@/helpers/asyncStorage';
 
 export default {
   name: 'AdvanceRowItems',
@@ -198,20 +198,6 @@ export default {
       }
       return this.chosenSize;
     },
-  },
-  created() {
-    asyncStorage.get('subtitle-style').then((data) => {
-      if (data.chosenSize) {
-        if (this.rowType !== this.rowTypeEnum.RATE) {
-          this.handleClick(data.chosenSize);
-        }
-      }
-    });
-  },
-  mounted() {
-    this.$bus.$on('change-size-by-menu', (index) => {
-      this.changeFontSize(index);
-    });
   },
   methods: {
     handleMouseEnter() {

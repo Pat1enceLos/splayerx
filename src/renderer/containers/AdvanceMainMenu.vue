@@ -35,19 +35,19 @@
           class="subtitleControl"
           :style="{
             cursor: 'pointer',
-            backgroundImage: hoverIndex === 2 ?
+            backgroundImage: hoverIndex === 1 ?
               'linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.045) 20%, ' +
               'rgba(255,255,255,0.00) 78%, rgba(255,255,255,0.00) 100%)' : '',
             transition: 'opacity 200ms',
           }"
-          @mouseenter="handleMouseenter(2)"
+          @mouseenter="handleMouseenter(1)"
           @mouseleave="handleMouseleave()"
           @click.left="handleSubClick"
         >
           <div
             class="item2"
             :style="{
-              color: hoverIndex === 2 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
+              color: hoverIndex === 1 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
               transition: 'color 300ms',
             }"
           >
@@ -56,7 +56,7 @@
             </div>
             <transition name="arrow">
               <Icon
-                v-show="hoverIndex === 2"
+                v-show="hoverIndex === 1"
                 class="arrowRight"
                 type="rightArrow"
               />
@@ -66,21 +66,21 @@
         <div
           class="audioItems"
           :style="{ cursor: 'pointer' }"
-          @mouseenter="handleMouseenter(3)"
+          @mouseenter="handleMouseenter(2)"
           @mouseleave="handleMouseleave()"
           @click.left="handleAudioClick"
         >
           <transition name="arrow">
             <div
-              v-show="hoverIndex === 3"
+              v-show="hoverIndex === 2"
               class="hoverAudioBack"
-            />
+            ></div>
           </transition>
           <div class="audioContainer">
             <div
               class="item3"
               :style="{
-                color: hoverIndex === 3 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
+                color: hoverIndex === 2 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
                 transition: 'color 300ms',
               }"
             >
@@ -89,7 +89,7 @@
               </div>
               <transition name="arrow">
                 <Icon
-                  v-show="hoverIndex === 3"
+                  v-show="hoverIndex === 2"
                   class="arrowRight"
                   type="rightArrow"
                 />
@@ -104,9 +104,6 @@
       <div
         v-show="readyShow === 'subMenu'"
         class="mainItems1"
-        :style="{
-          bottom: readyShow === 'subMenu' ? '' : '0px',
-        }"
       >
         <div
           class="topContainer"
@@ -160,9 +157,6 @@
       <div
         v-show="readyShow === 'audioMenu'"
         class="mainItems2"
-        :style="{
-          bottom: readyShow === 'audioMenu' ? '' : '0px',
-        }"
       >
         <div
           class="topContainer"
@@ -205,13 +199,14 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex';
+import asyncStorage from '@/helpers/asyncStorage';
 import { Subtitle as subtitleActions, Video as videoActions } from '@/store/actionTypes';
-import AdvanceRowItems from './AdvanceRowItems.vue';
-import BaseInfoCard from '../InfoCard.vue';
-import Icon from '../../BaseIconContainer.vue';
-import AdvanceColorItems from './AdvanceColorItems.vue';
-import AdvanceSelectedItemts from './AdvanceSelectItems.vue';
-import AdvanceColumnItems from './AdvanceColumnItems.vue';
+import AdvanceRowItems from '@/components/PlayingView/AdvanceControlFunctionalities/AdvanceRowItems.vue';
+import BaseInfoCard from '@/components/PlayingView/InfoCard.vue';
+import Icon from '@/components/BaseIconContainer.vue';
+import AdvanceColorItems from '@/components/PlayingView/AdvanceControlFunctionalities/AdvanceColorItems.vue';
+import AdvanceSelectedItemts from '@/components/PlayingView/AdvanceControlFunctionalities/AdvanceSelectItems.vue';
+import AdvanceColumnItems from '@/components/PlayingView/AdvanceControlFunctionalities/AdvanceColumnItems.vue';
 
 export default {
   name: 'AdvanceMainMenu',
@@ -496,6 +491,16 @@ export default {
   mounted() {
     this.$bus.$on('switch-audio-track', (index) => {
       this.switchAudioTrack(this.audioTrackList[index]);
+    });
+    this.$bus.$on('change-size-by-menu', (index) => {
+      this.updateSubSize(index);
+    });
+  },
+  created() {
+    asyncStorage.get('subtitle-style').then((data) => {
+      if (data.chosenSize) {
+        this.updateSubSize(data.chosenSize);
+      }
     });
   },
   methods: {
