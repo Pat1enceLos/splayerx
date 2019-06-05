@@ -24,12 +24,17 @@
         class="textContainer"
         :style="{
           cursor: isChosen ? 'default' : 'pointer',
-          color: !isChosen && hoveredText ?
-            'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
-          transition: 'color 300ms',
         }"
       >
-        <p>{{ rowType === rowTypeEnum.RATE ? $t('advance.rateTitle') : $t('advance.fontSize') }}</p>
+        <p
+          :style="{
+            color: !isChosen && hoveredText ?
+              'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
+            transition: 'color 300ms',
+          }"
+        >
+          {{ rowType === rowTypeEnum.RATE ? $t('advance.rateTitle') : $t('advance.fontSize') }}
+        </p>
         <div
           v-show="!isChosen || rowType === rowTypeEnum.RATE"
           class="rightItem"

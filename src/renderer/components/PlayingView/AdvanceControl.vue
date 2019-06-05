@@ -133,7 +133,7 @@ export default {
         this.clearMouseup({ componentName: '' });
         this.anim.playSegments([37, 41], true);
       }
-      document.addEventListener('mouseup', (e) => {
+      document.addEventListener('mouseup', (e: MouseEvent) => {
         if (e.button === 0) {
           if (!this.showAttached) {
             if (this.validEnter) {
