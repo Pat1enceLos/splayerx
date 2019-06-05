@@ -22,12 +22,17 @@
         class="textContainer"
         :style="{
           cursor: isChosen ? 'default' : 'pointer',
-          color: !isChosen && hoveredText ?
-            'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
-          transition: 'color 300ms',
         }"
       >
-        <p>{{ $t('advance.changeTrack') }}</p>
+        <p
+          :style="{
+            color: !isChosen && hoveredText ?
+              'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.6)',
+            transition: 'color 300ms',
+          }"
+        >
+          {{ $t('advance.changeTrack') }}
+        </p>
         <div
           v-show="!isChosen"
           class="rightTrackItem"
