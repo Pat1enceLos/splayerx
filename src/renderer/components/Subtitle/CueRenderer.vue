@@ -43,7 +43,7 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['chosenStyle', 'scaleNum', 'winWidth']),
+    ...mapGetters(['chosenStyle']),
     ChosenIndex() {
       return this.chosenStyle ? this.chosenStyle : 0;
     },

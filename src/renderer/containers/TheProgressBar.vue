@@ -71,17 +71,16 @@
         class="fake-progress"
         :style="{
           height: hovering ? '10px' : '4px',
-          backgroundColor: rightFakeProgressBackgroundColor,
         }"
       />
     </div>
   </div>
 </template>
-<script>
+<script lang="ts">
 import { mapGetters } from 'vuex';
 import { videodata } from '@/store/video';
 import { INPUT_COMPONENT_TYPE } from '@/plugins/input';
-import ThePreviewThumbnail from '@/containers/ThePreviewThumbnail.vue';
+import ThePreviewThumbnail from './ThePreviewThumbnail.vue';
 
 export default {
   name: 'TheProgressBar',
@@ -177,16 +176,16 @@ export default {
     },
     // To render the playedProgress when video is playing,
     // it is a difference with the hover-bar effect.
-    updatePlayProgressBar(time) {
-      const playedPercent = 100 * (time / this.duration);
+    updatePlayProgressBar(time: number) {
+      const playedPercent: number = 100 * (time / this.duration);
       const { playedProgress, fakeProgress } = this.$refs;
       playedProgress.style.width = this.hoveredPercent <= playedPercent ? `${playedPercent - this.hoveredPercent}%` : `${playedPercent}%`;
       playedProgress.style.backgroundColor = playedPercent <= this.hoveredPercent || !this.hovering ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)';
       playedProgress.style.order = this.hoveredPercent <= playedPercent ? '1' : '0';
       fakeProgress.style.backgroundColor = this.rightFakeProgressBackgroundColor(time);
     },
-    updateHoveredProgressBar(time, hoveredPercent) {
-      const playedPercent = 100 * (time / this.duration);
+    updateHoveredProgressBar(time: number, hoveredPercent: number) {
+      const playedPercent: number = 100 * (time / this.duration);
       const { hoveredProgress, defaultProgress } = this.$refs;
       hoveredProgress.style.width = hoveredPercent <= playedPercent ? `${hoveredPercent}%` : `${hoveredPercent - playedPercent}%`;
       hoveredProgress.style.backgroundColor = hoveredPercent <= playedPercent ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)';
@@ -215,10 +214,10 @@ export default {
         requestAnimationFrame(this.renderProgressBar);
       }
     },
-    rightFakeProgressBackgroundColor(time) {
-      const hoveredEnd = this.hoveredPercent >= 100;
-      const playedEnd = time >= this.duration;
-      let opacity = 0;
+    rightFakeProgressBackgroundColor(time: number) {
+      const hoveredEnd: boolean = this.hoveredPercent >= 100;
+      const playedEnd: boolean = time >= this.duration;
+      let opacity: number = 0;
       if (this.mouseleave) {
         if (playedEnd) {
           opacity = 0.9;
@@ -229,19 +228,21 @@ export default {
         } else {
           opacity = 0;
         }
+      } else if (playedEnd) {
+        opacity = 0.9;
       } else {
-        opacity = hoveredEnd !== playedEnd ? 0.3 : 0.1;
+        opacity = hoveredEnd ? 0.3 : 0.1;
       }
-      return this.whiteWithOpacity(hoveredEnd && playedEnd ? 0.9 : opacity);
+      return this.whiteWithOpacity(opacity);
     },
-    handleMousemove(event) {
+    handleMousemove(event: MouseEvent) {
       this.hoveredPageX = event.pageX;
       this.hovering = true;
       if (this.hoveringId) clearTimeout(this.hoveringId);
       if (event.target !== this.$refs.leftInvisible) this.showThumbnail = true;
       this.mouseleave = false;
     },
-    handleDocumentMousemove(event) {
+    handleDocumentMousemove(event: MouseEvent) {
       if (this.mousedown) this.hoveredPageX = event.pageX;
     },
     handleMouseleave() {
@@ -254,24 +255,20 @@ export default {
         this.mouseleave = true;
       }
     },
-    handleMousedown(event) {
+    handleMousedown(event: MouseEvent) {
       this.mousedown = true;
       if (event.target === this.$refs.leftInvisible || event.target === this.$refs.rightInvisible) {
         this.showThumbnail = false;
-        this.$bus.$emit('currentWidget', 'the-video-controller');
         this.setHoveringToFalse(false);
       }
       if (this.hoveredCurrentTime !== this.duration) {
         this.$bus.$emit('seek', this.hoveredCurrentTime);
         this.$ga.event('app', 'seek');
       }
-      if (this.hoveredCurrentTime === 0) {
-        this.$bus.$emit('play');
-      }
     },
-    handleDocumentMouseup(event) {
-      const path = event.path || (event.composedPath && event.composedPath());
-      const isTargetProgressBar = path.find(e => e.tagName === 'DIV' && e.className.includes('the-progress-bar'));
+    handleDocumentMouseup(event: any) {
+      const path: any = event.path || (event.composedPath && event.composedPath());
+      const isTargetProgressBar: number | undefined = path.find((e: HTMLElement) => e.tagName === 'DIV' && e.className.includes('the-progress-bar'));
       // 如果mouseup的target是当前组件，那么不需要触发leave
       if (!isTargetProgressBar) {
         this.mouseleave = true;
@@ -286,22 +283,25 @@ export default {
         this.$bus.$emit('seek', this.hoveredCurrentTime);
       }
     },
-    pageXToProportion(pageX, fakeButtonWidth, winWidth) {
+    pageXToProportion(pageX: number, fakeButtonWidth: number, winWidth: number) {
       if (pageX <= fakeButtonWidth) return 0;
       if (pageX >= winWidth - fakeButtonWidth) return 1;
       return (pageX - fakeButtonWidth) / (winWidth - (fakeButtonWidth * 2));
     },
-    pageXToThumbnailPosition(pageX, fakeButtonWidth, thumbnailWidth, winWidth) {
+    pageXToThumbnailPosition(
+      pageX: number,
+      fakeButtonWidth: number, thumbnailWidth: number, winWidth: number,
+    ) {
       if (pageX <= fakeButtonWidth + (thumbnailWidth / 2)) return fakeButtonWidth;
       if (pageX > winWidth - (fakeButtonWidth + (thumbnailWidth / 2))) {
         return winWidth - (fakeButtonWidth + thumbnailWidth);
       }
       return pageX - (thumbnailWidth / 2);
     },
-    whiteWithOpacity(opacity) {
-      return `rgba(255, 255, 255, ${opacity}`;
+    whiteWithOpacity(opacity: number) {
+      return `rgba(255, 255, 255, ${opacity})`;
     },
-    setHoveringToFalse(direct) {
+    setHoveringToFalse(direct: boolean) {
       if (!direct) {
         if (this.hoveringId) {
           clearTimeout(this.hoveringId);
