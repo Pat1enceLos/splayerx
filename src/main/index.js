@@ -517,6 +517,13 @@ function registerMainWindowEvent(mainWindow) {
       browserViews.forEach((view) => {
         view.webContents.loadURL(url);
       });
+      mainWindow.getBrowserView().setBounds({
+        x: 0, y: 36, width: mainWindow.getSize()[0], height: mainWindow.getSize()[1] - 36,
+      });
+      mainWindow.getBrowserView().setAutoResize({ width: true, height: true });
+      const mainId = browserViews[0].id;
+      const browserId = browsingWindow.getBrowserViews()[0].id;
+      mainWindow.send('current-browser-id', [mainId, browserId]);
     } else {
       browserViews = tabGroups[index][currentBrowserHostname];
       const id = mainWindow.getBrowserView().id;
@@ -524,7 +531,6 @@ function registerMainWindowEvent(mainWindow) {
         mainWindow.addBrowserView(
           browserViews[currentPipHostname === currentBrowserHostname ? 1 : 0],
         );
-        mainWindow.removeBrowserView(mainWindow.getBrowserViews().find(view => view.id === id));
       } else {
         mainWindow.addBrowserView(browserViews[0]);
         browsingWindow.removeBrowserView(browsingWindow.getBrowserView());
@@ -532,11 +538,15 @@ function registerMainWindowEvent(mainWindow) {
       }
       setTimeout(() => {
         mainWindow.removeBrowserView(mainWindow.getBrowserViews().find(view => view.id === id));
+        mainWindow.getBrowserView().setBounds({
+          x: 0, y: 36, width: mainWindow.getSize()[0], height: mainWindow.getSize()[1] - 36,
+        });
+        mainWindow.getBrowserView().setAutoResize({ width: true, height: true });
+        const mainId = mainWindow.getBrowserView().id;
+        const browserId = browsingWindow.getBrowserViews()[0].id;
+        mainWindow.send('current-browser-id', [mainId, browserId]);
       }, 150);
     }
-    const mainId = mainWindow.getBrowserViews()[0].id;
-    const browserId = browsingWindow.getBrowserViews()[0].id;
-    mainWindow.send('current-browser-id', [mainId, browserId]);
     mainWindow.send('update-browser-view', !(currentBrowserHostname !== 'blank' && index === -1));
   });
   ipcMain.on('keep-browsers-cache', (evt, url) => {
@@ -708,7 +718,7 @@ function registerMainWindowEvent(mainWindow) {
       const index = browViews[0].webContents.history
         .findIndex(url => url === mainView.webContents.getURL());
       browViews[0].webContents
-        .loadURL(mainView.webContents.history[index - 1]);
+        .loadURL(mainView.webContents.history[index >= 1 ? index - 1 : 0]);
       mainWindow.addBrowserView(browViews[0]);
       browsingWindow.addBrowserView(mainView);
       browsingWindow.addBrowserView(pipControlView);
@@ -720,6 +730,12 @@ function registerMainWindowEvent(mainWindow) {
       .webContents.getURL()).hostname;
     pipControlView.webContents.loadURL(`file:${require('path').resolve(__static, 'pip/pipControl.html')}`);
     pipControlView.setBackgroundColor('#00FFFFFF');
+    pipControlView.setBounds({
+      x: Math.round(browsingWindow.getSize()[0] - 65),
+      y: Math.round(browsingWindow.getSize()[1] / 2 - 54),
+      width: 50,
+      height: 104,
+    });
     titlebarView.webContents.loadURL(titlebarUrl);
     titlebarView.setBackgroundColor('#00FFFFFF');
     titlebarView.setBounds({
@@ -803,9 +819,6 @@ function registerMainWindowEvent(mainWindow) {
     }
     menuService.updateFocusedWindow(true);
     mainWindow.focus();
-  });
-  ipcMain.on('update-header-to-show', (e, headerToShow) => {
-    mainWindow.send('update-header-to-show', headerToShow);
   });
   ipcMain.on('update-route-name', (e, route) => {
     routeName = route;

@@ -273,7 +273,6 @@ export default {
       this.browserIds = ids;
     });
     this.$electron.ipcRenderer.on('update-browser-view', (e: Event, isShift: boolean) => {
-      this.initialBrowserViewRect();
       this.addListenerToBrowser();
       if (isShift) {
         const loadUrl = this.$electron.remote.getCurrentWindow()
@@ -308,9 +307,6 @@ export default {
     });
     this.$electron.ipcRenderer.on('quit', () => {
       this.quit = true;
-    });
-    this.$electron.ipcRenderer.on('update-header-to-show', (ev: Event, headerToShow: boolean) => {
-      this.headerToShow = headerToShow;
     });
     this.$electron.ipcRenderer.on('update-pip-state', () => {
       this.updateIsPip(false);
@@ -396,6 +392,8 @@ export default {
         this.didStartLoading(url);
       });
       this.$electron.remote.getCurrentWindow().getBrowserViews()[0].webContents.addListener('did-stop-loading', this.didStopLoading);
+      this.$electron.remote.getCurrentWindow().getBrowserViews()[0].webContents.addListener('did-finish-load', this.didStopLoading);
+
     },
     removeListener() {
       const currentWebContents = this.$electron.remote.getCurrentWindow()
@@ -505,6 +503,10 @@ export default {
     },
     handleOpenUrl({ url }: { url: string }) {
       if (!url || url === 'about:blank') return;
+      if (!this.isPip) {
+        this.$electron.ipcRenderer.send('keep-browsers-cache', url);
+      }
+      this.didStartLoading(url);
       this.$electron.remote.getCurrentWindow().getBrowserViews()[0].webContents.loadURL(urlParseLax(url).protocol ? url : `https:${url}`);
     },
     pipAdapter() {
@@ -684,6 +686,7 @@ export default {
     },
     handleExitPip() {
       if (this.isPip) {
+        this.updatePipState(true);
         this.exitPipOperation();
         this.updateIsPip(false);
       }
