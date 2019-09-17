@@ -1,11 +1,12 @@
 import MediaInfoQueue, { CodecType, ISubtitleStream } from './mediaInfoQueue';
-import SnapshotSubtitleQueue from './snapshotSubtitleQueue';
+import SnapshotQueue from './snapshotSubtitleQueue';
+import SubtitleQueue from './subtitleQueue';
 import ThumbnailQueue from './thumbnailQueue';
-import { Format } from '@/interfaces/ISubtitle';
 import { log } from '@/libs/Log';
 
 const mediaInfoQueue = new MediaInfoQueue();
-const snapshotSubtitleQueue = new SnapshotSubtitleQueue();
+const snapshotQueue = new SnapshotQueue();
+const subtitleQueue = new SubtitleQueue();
 const thumbnailQueue = new ThumbnailQueue();
 
 export async function getMediaInfo(path: string) {
@@ -36,7 +37,7 @@ export async function getSnapshotPath(
   width: number = 1920, height: number = 1080,
 ) {
   try {
-    return snapshotSubtitleQueue.getSnapshotPath(
+    return snapshotQueue.getSnapshotPath(
       videoPath,
       timeInSeconds,
       width, height,
@@ -46,28 +47,64 @@ export async function getSnapshotPath(
     return '';
   }
 }
-export async function getSubtitlePath(videoPath: string, streamIndex: number, format: Format) {
+
+export async function getSubtitleMetadata(videoPath: string, streamIndex: number) {
   try {
-    return snapshotSubtitleQueue.getSubtitlePath(videoPath, streamIndex, format);
+    return subtitleQueue.getSubtitleMetadata(videoPath, streamIndex);
   } catch (error) {
-    log.error('[MediaTask|Subtitle]', error);
+    log.error('[MediaTask|SubtitleMetadata]', error);
     return '';
   }
 }
-
-export async function getThumbnailPath(
+export async function cacheSubtitle(videoPath: string, streamIndex: number) {
+  try {
+    return subtitleQueue.cacheSubtitle(videoPath, streamIndex);
+  } catch (error) {
+    log.error('[MediaTask|SubtitleCache]', error);
+    return '';
+  }
+}
+export async function getSubtitleFragment(
   videoPath: string,
-  width: number,
-  rowCount: number, columnCount: number,
+  streamIndex: number,
+  videoTime: number,
+) {
+  try {
+    return subtitleQueue.getSubtitleFragment(videoPath, streamIndex, videoTime);
+  } catch (error) {
+    log.error('[MediaTask|SubtitleFragment]', error);
+    return '';
+  }
+}
+export async function finishSubtitleExtraction(videoPath: string, streamIndex: number) {
+  try {
+    subtitleQueue.stopSubtitleExtraction(videoPath, streamIndex);
+  } catch (error) {
+    log.error('[MediaTask|SubtitleFragment]', error);
+  }
+}
+
+/**
+ * 获取进度条缩略图路径
+ * 缩略图每秒一张，放在一行拼在一个图片文件里
+ * @param videoPath 视频路径
+ * @param width 单个缩略图宽度
+ * @param duration 视频时长（秒）
+ * @param screenWidth 屏幕宽度
+ * @param maxThumbnailCount 最大缩略图数量（出于性能考虑）
+ */
+export async function getThumbnailPath(
+  videoPath: string, interval: number, width: number, cols: number,
 ) {
   try {
     return thumbnailQueue.getThumbnailPath(
       videoPath,
+      interval,
       width,
-      rowCount, columnCount,
+      cols,
     );
   } catch (error) {
     log.error('[MediaTask|Thumbnail]', error);
-    return '';
+    return undefined;
   }
 }

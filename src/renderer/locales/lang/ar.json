@@ -55,7 +55,7 @@
       "title": "لم يتم العثور على الملف"
     },
     "playlistNonExist": {
-      "content": ".تمت إزالة هذا العنصر",
+      "content": "تمت إزالة الملف أو إعادة تسميته.",
       "title": "لم يتم العثور على الملف"
     },
     "fileNonExistInPlaylist": {
@@ -136,6 +136,7 @@
     },
     "splayerx": {
       "about": "حول SPlayer",
+      "checkForUpdates": "التحقق من التحديثات",
       "hide": "إخفاء",
       "hideOthers": "إخفاء الآخرين",
       "preferences": "تفضيلات",
@@ -197,7 +198,9 @@
       "name": "نافذة او شباك",
       "originSize": "100٪",
       "enterPip": "أدخل صورة في صورة",
-      "exitPip": "الخروج من الصورة في صورة"
+      "exitPip": "الخروج من الصورة في صورة",
+      "playInNewWindow": "اللعب في نافذة جديدة",
+      "backToBrowser": "العودة إلى المتصفح"
     },
     "favourite": {
       "name": "قناة",
@@ -292,10 +295,23 @@
       "underlinedContent": "تعارض"
     }
   },
+  "alertBubble": {
+    "button": ""
+  },
   "protectBubble": {
     "agree": "حسنا",
     "setting": "المشهد",
     "content": "تم تمكين حماية الخصوصية الذكية. ستتم إزالة محفوظات التشغيل الحساسة أو غير المناسبة للعمل."
+  },
+  "checkForUpdatesBubble": {
+    "needUpdate": {
+      "confirm": "تحميل",
+      "cancel": "تخطى",
+      "content": ""
+    },
+    "noNeed": {
+      "content": ""
+    }
   },
   "recentPlaylist": {
     "folderSource": "مجلد",
@@ -349,7 +365,11 @@
     "title": ""
   },
   "translateModal": {
+    "videoLanguageLabel": "لغة الصوت",
+    "subtitleLanguageLabel": "ترجم إلى",
     "selectLanguageLabel": "لغة الصوت",
+    "audioLanguageLoading": "جارٍ إحضار قائمة اللغات ...",
+    "audioLanguageLoadFail": "فشل الاتصال ، يرجى المحاولة لاحقًا",
     "select": {
       "title": "اختر لغة الصوت",
       "content": "لإنشاء نتيجة ترجمة ، يرجى تحديد اللغة التي تسمعها في الفيديو والنقر على زر إنشاء. قد تستغرق العملية بعض الوقت."

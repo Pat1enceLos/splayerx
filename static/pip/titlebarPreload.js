@@ -3,7 +3,12 @@ console.log('titlebar-preloaded~~~~~~~');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { ipcRenderer, remote } = require('electron');
 const isDarwin = process.platform === 'darwin';
-
+let offset = null;
+let windowSize = null;
+let pipTimer = null;
+function getRatio() {
+  return window.devicePixelRatio || 1;
+}
 document.addEventListener('DOMContentLoaded', () => {
   const titlebar = document.querySelector('.titlebar');
   const content = document.querySelector('.content');
@@ -15,6 +20,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const max = document.querySelector('.titlebarMax');
   if (titlebar) {
     titlebar.addEventListener('dblclick', () => ipcRenderer.send('mouseup', 'max'));
+    titlebar.style.display = 'flex';
+    titlebar.addEventListener('mousemove', () => {
+      if (pipTimer) clearTimeout(pipTimer);
+      ipcRenderer.send('pip-btn-mousemove');
+      titlebar.style.display = 'flex';
+    });
+    pipTimer = setTimeout(() => {
+      titlebar.style.display = 'none';
+    }, 3000);
   }
   if (isDarwin) {
     let mouseenter = false;
@@ -63,6 +77,27 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
+  window.addEventListener('mousedown', (evt) => {
+    offset = [evt.clientX, evt.clientY];
+    if (getRatio() !== 1) {
+      windowSize = remote.getCurrentWindow().getSize();
+    }
+    if ([content, titlebar].includes(evt.target)) ipcRenderer.send('update-mouse-info', { offset, windowSize });
+  }, true);
+  window.addEventListener('mouseup', () => {
+    offset = null;
+    windowSize = null;
+    ipcRenderer.send('update-mouse-info', { offset, windowSize });
+  });
+  window.addEventListener('keydown', (e) => {
+    ipcRenderer.send('key-events', e.keyCode);
+  });
+  window.addEventListener('mouseout', (e) => {
+    const winSize = remote.getCurrentWindow().getSize();
+    if (e.clientY <= 0 || e.clientX <= 0 || e.clientX >= winSize[0]) {
+      ipcRenderer.send('mouseout', 'out');
+    }
+  });
   if (close) {
     close.addEventListener('mouseup', () => ipcRenderer.send('mouseup', 'close'));
   }

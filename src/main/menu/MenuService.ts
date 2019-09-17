@@ -1,47 +1,31 @@
 import { ipcMain } from 'electron';
 import Menu from './Menu';
 import { IMenuDisplayInfo } from '../../renderer/interfaces/IRecentPlay';
-import { SubtitleControlListItem } from '../../renderer/interfaces/ISubtitle';
+import { ISubtitleControlListItem } from '../../renderer/interfaces/ISubtitle';
 
 export default class MenuService {
   private menu: Menu;
-
-  private windowClosed: boolean;
 
   public constructor() {
     this.menu = new Menu();
   }
 
-  public setMainWindow(window: Electron.BrowserWindow) {
-    this.windowClosed = false;
+  public setMainWindow(window: Electron.BrowserWindow | null) {
     this.menu.setMainWindow(window);
-    this.registeMenuActions();
+    if (window) this.registeMenuActions();
+    else this.menu.closedMenu();
   }
 
-  public minimize(isMinimized: boolean) {
-    this.menu.disable = isMinimized;
+  public enableMenu(enable: boolean) {
+    this.menu.enableMenu(enable);
   }
 
-  public closed() {
-    this.windowClosed = true;
-    this.menu.disable = true;
-    this.menu.setMainWindow(null);
+  public updateFocusedWindow(isFocusedOnMain: boolean, isNewWindow: boolean) {
+    this.menu.updateFocusedWindow(isFocusedOnMain, isNewWindow);
   }
 
-  public handleBossKey(hide: boolean) {
-    this.menu.disable = hide;
-  }
-
-  public updatePaused(paused: boolean) {
-    this.menu.updatePaused(paused);
-  }
-
-  public updateFullScreen(isFullScreen: boolean) {
-    this.menu.updateFullScreen(isFullScreen);
-  }
-
-  public updateFocusedWindow(isPip: boolean) {
-    this.menu.updateFocusedWindow(isPip);
+  public updatePipIcon() {
+    this.menu.updatePipIcon();
   }
 
   private registeMenuActions() {
@@ -54,10 +38,10 @@ export default class MenuService {
     ipcMain.on('update-recent-play', (e: Event, items: IMenuDisplayInfo[]) => {
       this.menu.updateRecentPlay(items);
     });
-    ipcMain.on('update-primary-sub', (e: Event, items: { id: string, label: string, checked: boolean, subtitleItem: SubtitleControlListItem }[]) => {
+    ipcMain.on('update-primary-sub', (e: Event, items: { id: string, label: string, checked: boolean, subtitleItem: ISubtitleControlListItem }[]) => {
       this.menu.updatePrimarySub(items);
     });
-    ipcMain.on('update-secondary-sub', (e: Event, items: { id: string, label: string, checked: boolean, enabled: boolean, subtitleItem: SubtitleControlListItem }[]) => {
+    ipcMain.on('update-secondary-sub', (e: Event, items: { id: string, label: string, checked: boolean, enabled: boolean, subtitleItem: ISubtitleControlListItem }[]) => {
       this.menu.updateSecondarySub(items);
     });
     ipcMain.on('update-audio-track', (e: Event, items: { id: string, label: string }[]) => {
@@ -66,20 +50,8 @@ export default class MenuService {
     ipcMain.on('update-route-name', (e: Event, routeName: string) => {
       this.menu.routeName = routeName;
     });
-    ipcMain.on('update-paused', (e: Event, paused: boolean) => {
-      this.updatePaused(paused);
-    });
-    ipcMain.on('update-playlist', (e: Event, playlistOpened: boolean) => {
-      this.menu.updatePlaylist(playlistOpened);
-    });
-    ipcMain.on('update-playingview-on-top', (e: Event, topOnWindow: boolean) => {
-      this.menu.updatePlayingViewTop(topOnWindow);
-    });
-    ipcMain.on('update-browsingview-on-top', (e: Event, topOnWindow: boolean) => {
-      this.menu.updateBrowsingViewTop(topOnWindow);
-    });
-    ipcMain.on('update-focused-window', (e: Event, isMainWindow: boolean) => {
-      this.updateFocusedWindow(isMainWindow);
+    ipcMain.on('update-label', (e: Event, id: string, label: string) => {
+      this.menu.updateMenuItemLabel(id, label);
     });
     ipcMain.on('update-checked', (e: Event, id: string, checked: boolean) => {
       this.menu.updateMenuItemChecked(id, checked);
@@ -87,8 +59,8 @@ export default class MenuService {
     ipcMain.on('update-enabled', (e: Event, id: string, enabled: boolean) => {
       this.menu.updateMenuItemEnabled(id, enabled);
     });
-    ipcMain.on('enable-submenu-item', (e: Event, id: string, enabled: boolean) => {
-      this.menu.enableSubmenuItem(id, enabled);
+    ipcMain.on('update-focused-window', (e: Event, isFocusedOnMain: boolean, isNewWindow: boolean) => {
+      this.menu.updateFocusedWindow(isFocusedOnMain, isNewWindow);
     });
   }
 }

@@ -251,7 +251,7 @@ export default {
   width: 30px;
   height: 30px;
 }
-.minus, .plus, .reset {
+.minus, .plus, .reset, .closeSquare {
   -webkit-app-region: no-drag;
   @media screen and (max-aspect-ratio: 1/1) and (min-width: 289px) and (max-width: 480px),
   screen and (min-aspect-ratio: 1/1) and (min-height: 289px) and (max-height: 480px) {
@@ -544,45 +544,13 @@ screen and (min-aspect-ratio: 1/1) and (min-height: 1080px) {
   height: 16px;
   display: block;
 }
-.backDisabled, .forwardDisabled {
-  display: block;
-  width: 20px;
-  height: 20px;
+.down {
+  width: 5px;
+  height: 7px;
 }
-.back, .forward, .pageRefresh {
-  width: 20px;
-  height: 20px;
-  .default {
-    display: block;
-  }
-  .hover {
-    display: none;
-  }
-  .active {
-    display: none;
-  }
-  &:hover {
-    .default {
-      display: none;
-    }
-    .hover {
-      display: block;
-    }
-    .active {
-      display: none;
-    }
-  }
-  &:active {
-    .default {
-      display: none;
-    }
-    .hover {
-      display: none;
-    }
-    .active {
-      display: block;
-    }
-  }
+.bilibiliSidebar, .iqiyiSidebar, .youtubeSidebar {
+  width: 44px;
+  height: 44px;
 }
 .showMarks, .hideMarks, .closeSearch {
   width: 18px;
@@ -648,45 +616,14 @@ screen and (min-aspect-ratio: 1/1) and (min-height: 1080px) {
     }
   }
 }
-.pipDisabled, .videoRecordDisabled {
+.videoRecordDisabled {
   display: block;
   width: 20px;
   height: 20px;
 }
-.pip {
-  width: 20px;
-  height: 20px;
-  .default {
-    display: block;
-  }
-  .hover {
-    display: none;
-  }
-  .active {
-    display: none;
-  }
-  &:hover {
-    .default {
-      display: none;
-    }
-    .hover {
-      display: block;
-    }
-    .active {
-      display: none;
-    }
-  }
-  &:active {
-    .default {
-      display: none;
-    }
-    .hover {
-      display: none;
-    }
-    .active {
-      display: block;
-    }
-  }
+.pip, .pop, .pipDisabled, .popDisabled {
+  width: 30px;
+  height: 30px;
 }
 .pipRecord, .pipBack {
   width: 20px;

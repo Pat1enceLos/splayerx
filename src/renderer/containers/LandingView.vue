@@ -1,11 +1,11 @@
 <template>
-  <div class="wrapper">
+  <div class="landing-view">
     <open-url
       v-show="openUrlShow"
       :open-input-url="openInputUrl"
       :close-url-input="closeUrlInput"
     />
-    <transition name="background-container-transition">
+    <transition name="basidebckground-container-transition">
       <div
         v-if="item.backgroundUrl"
         class="background"
@@ -65,9 +65,12 @@
     />
     <div
       :style="{
-        transform: isFullScreen ? '' : `translateX(${move}px)`,
+        left: playlistLeft,
+        right: playlistRight,
         bottom: winWidth > 1355 ? `${40 / 1355 * winWidth}px` : '40px',
-        transition: tranFlag ? 'transform 400ms cubic-bezier(0.42, 0, 0.58, 1)' : '',
+        transition: tranFlag ?
+          'left 400ms cubic-bezier(0.42, 0, 0.58, 1)'
+          : 'right 400ms cubic-bezier(0.42, 0, 0.58, 1)',
       }"
       class="controller"
     >
@@ -80,6 +83,7 @@
             height:`${thumbnailHeight}px`,
             width:`${thumbnailWidth}px`,
             marginRight: `${marginRight}px`,
+            cursor: firstIndex === 0 ? 'pointer' : `${cursorUrl}, pointer`,
             backgroundColor:
               item.backgroundUrl
                 ? 'rgba(255,255,255,0.12) ': 'rgba(255,255,255,0.05)',
@@ -103,7 +107,11 @@
           :can-hover="canHover"
           :backgroundUrl="backgroundUrl"
           :index="index"
-          :is-in-range="index + 1 >= firstIndex && index + 1 <= lastIndex"
+          :is-in-range="
+              firstIndex === 0
+              ? index + 1 <= lastIndex - (showSidebar ? 1 : 0)
+              : index + 1 >= firstIndex + (showSidebar ? 1 : 0)
+            "
           :thumbnail-width="thumbnailWidth"
           :thumbnail-height="thumbnailHeight"
           :shifting="shifting"
@@ -122,9 +130,7 @@
 
 <script lang="ts">
 import Vue from 'vue';
-import { mapGetters } from 'vuex';
-// @ts-ignore
-import urlParseLax from 'url-parse-lax';
+import { mapGetters, mapActions } from 'vuex';
 import { join } from 'path';
 import { Route } from 'vue-router';
 import { filePathToUrl } from '@/helpers/path';
@@ -138,6 +144,7 @@ import VideoItem from '@/components/LandingView/VideoItem.vue';
 import { log } from '@/libs/Log';
 import Sagi from '@/libs/sagi';
 import { findNsfwFistFilter } from '@/libs/utils';
+import { Browsing as browsingActions } from '@/store/actionTypes';
 
 Vue.component('PlaylistItem', PlaylistItem);
 Vue.component('VideoItem', VideoItem);
@@ -148,6 +155,12 @@ export default {
     Icon,
     NotificationBubble,
     'open-url': OpenUrl,
+  },
+  props: {
+    showSidebar: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -162,10 +175,12 @@ export default {
       pageMounted: false,
       logoTransition: '',
       canHover: false,
+      playlistLeft: '0',
+      playlistRight: '',
     };
   },
   computed: {
-    ...mapGetters(['winWidth', 'defaultDir', 'isFullScreen', 'incognitoMode', 'hideNSFW', 'smartMode', 'nsfwProcessDone']),
+    ...mapGetters(['winWidth', 'winPos', 'defaultDir', 'isFullScreen', 'incognitoMode', 'hideNSFW', 'smartMode', 'nsfwProcessDone', 'pipSize', 'pipPos']),
     lastIndex: {
       get() {
         return (this.firstIndex + this.showItemNum) - 1;
@@ -181,9 +196,6 @@ export default {
     cursorUrl() {
       if (this.firstIndex === 0) return `url("${filePathToUrl(join(__static, 'cursor/cursorRight.svg') as string)}")`;
       return `url("${filePathToUrl(join(__static, 'cursor/cursorLeft.svg') as string)}")`;
-    },
-    move() {
-      return -(this.firstIndex * (this.thumbnailWidth + this.marginRight));
     },
     marginRight() {
       return this.winWidth > 1355 ? (this.winWidth / 1355) * 15 : 15;
@@ -216,8 +228,23 @@ export default {
     },
   },
   watch: {
-    firstIndex() {
+    firstIndex(val: number, oldVal: number) {
       this.shifting = true;
+      if (val === 0) {
+        this.playlistRight = `-${(this.move(oldVal) - 35) + (this.showSidebar ? 76 : 0)}px`;
+        setTimeout(() => {
+          this.tranFlag = true;
+          this.playlistLeft = '0';
+          this.playlistRight = '';
+        }, 400);
+      } else {
+        this.playlistLeft = `-${this.move((this.landingViewItems.length - ((oldVal + this.showItemNum) - 1))) + (this.showSidebar ? 76 : 0)}px`;
+        setTimeout(() => {
+          this.tranFlag = false;
+          this.playlistRight = '35px';
+          this.playlistLeft = '';
+        }, 400);
+      }
     },
     lastIndex() {
       this.shifting = true;
@@ -231,7 +258,6 @@ export default {
     },
     showItemNum() {
       if (this.firstIndex !== 0) {
-        this.tranFlag = false;
         this.lastIndex = this.landingViewItems.length;
       }
     },
@@ -245,6 +271,7 @@ export default {
   },
   /* eslint-disable @typescript-eslint/no-explicit-any */
   created() {
+    this.createTouchBar();
     window.addEventListener('mousemove', this.globalMoveHandler);
     // Get all data and show
     if (!this.incognitoMode) {
@@ -258,6 +285,7 @@ export default {
       // just for delete thumbnail display
       this.firstIndex = 0;
       this.item = {};
+      this.$bus.$emit('highlight-sidebar', false);
       this.landingViewItems = [];
     });
     // responsible for delete the thumbnail on display which had already deleted in DB
@@ -266,6 +294,7 @@ export default {
         .findIndex((file: { id: number }) => file.id === id);
       if (deleteIndex >= 0) {
         this.item = {};
+        this.$bus.$emit('highlight-sidebar', false);
         this.landingViewItems.splice(deleteIndex, 1);
       }
     });
@@ -311,10 +340,39 @@ export default {
     window.removeEventListener('keyup', this.keyboardHandler);
   },
   methods: {
+    ...mapActions({
+      updateInitialUrl: browsingActions.UPDATE_INITIAL_URL,
+    }),
+    createTouchBar() {
+      const { TouchBar } = this.$electron.remote;
+      const { TouchBarButton, TouchBarSpacer } = TouchBar;
+
+      this.sidebarButton = new TouchBarButton({
+        icon: this.createIcon('touchBar/sidebar.png'),
+        click: () => {
+          this.$event.emit('side-bar-mouseup');
+        },
+      });
+      this.openFileButton = new TouchBarButton({
+        icon: this.createIcon('touchBar/addVideo.png'),
+        click: () => {
+          this.open();
+        },
+      });
+      this.touchBar = new TouchBar({
+        items: [
+          this.sidebarButton,
+          new TouchBarSpacer({ size: 'large' }),
+          this.openFileButton,
+        ],
+      });
+      this.$electron.remote.getCurrentWindow().setTouchBar(this.touchBar);
+    },
+    move(steps: number) {
+      return steps * (this.thumbnailWidth + this.marginRight);
+    },
     handleBrowsingOpen(url: string) {
-      const parsedUrl = urlParseLax(url);
-      this.$electron.ipcRenderer.send('add-browsing');
-      this.$electron.ipcRenderer.send('create-browser-view', { url: parsedUrl.protocol ? parsedUrl.href : `http://${url}` });
+      this.updateInitialUrl(url);
       this.$router.push({
         name: 'browsing-view',
       });
@@ -336,11 +394,9 @@ export default {
     keyboardHandler(e: KeyboardEvent) {
       if (e.key === 'ArrowRight') {
         this.shifting = true;
-        this.tranFlag = true;
         this.lastIndex = this.landingViewItems.length;
       } else if (e.key === 'ArrowLeft') {
         this.shifting = true;
-        this.tranFlag = true;
         this.firstIndex = 0;
       }
     },
@@ -356,7 +412,6 @@ export default {
     },
     openOrMove() {
       if (this.firstIndex === 1) {
-        this.tranFlag = true;
         this.firstIndex = 0;
       } else if (this.winWidth > 1355) {
         this.open();
@@ -369,15 +424,14 @@ export default {
     },
     onItemMouseover(index: number) {
       this.item = this.landingViewItems[index];
+      this.$bus.$emit('highlight-sidebar', true);
     },
     onItemClick(index: number) {
-      if (index === this.lastIndex && !this.isFullScreen) {
+      if (index === (this.lastIndex - (this.showSidebar ? 1 : 0)) && !this.isFullScreen) {
         this.shifting = true;
-        this.tranFlag = true;
         this.lastIndex = this.landingViewItems.length;
-      } else if (index + 1 < this.firstIndex && !this.isFullScreen) {
+      } else if (index + 1 < (this.firstIndex + (this.showSidebar ? 1 : 0)) && !this.isFullScreen) {
         this.shifting = true;
-        this.tranFlag = true;
         this.firstIndex = 0;
       } else if (!this.filePathNeedToDelete) {
         this.openPlayList(this.landingViewItems[index].id);
@@ -385,10 +439,10 @@ export default {
     },
     onItemDelete(index: number) {
       this.item = {};
+      this.$bus.$emit('highlight-sidebar', false);
       const [deletedItem] = this.landingViewItems.splice(index, 1);
       if (this.firstIndex !== 0) {
         this.shifting = true;
-        this.tranFlag = true;
         this.lastIndex = this.landingViewItems.length;
       }
       playInfoStorageService.deleteRecentPlayedBy(deletedItem.id);
@@ -398,35 +452,31 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-
 $themeColor-Light: white;
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-.wrapper {
-  background-image: linear-gradient(-28deg, #414141 0%, #545454 47%, #7B7B7B 100%);
-  height: 100vh;
-  width: 100vw;
-  z-index: -1;
+.landing-view {
+  overflow: hidden;
+  will-change: width;
+  transition-property: width;
+  transition-duration: 100ms;
+  transition-timing-function: ease-out;
+  background-color: #434349;
+  position: absolute;
+  right: 0;
+  height: 100%;
+  z-index: 1;
   .mask {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: url(../assets/noise-bg.png);
-    background-repeat: repeat;
     transition: background-color 120ms linear;
   }
 }
 .controller {
   position: absolute;
   z-index: 6;
-  left: 0;
   width: auto;
 
   .playlist {
@@ -447,6 +497,7 @@ $themeColor-Light: white;
     }
 
     .btnMask {
+      box-sizing: border-box;
       border-radius: 2px;
       width: 100%;
       height: 100%;

@@ -17,6 +17,7 @@ export interface IMenubarMenuItemAction {
   winAccelerator?: string,
   checked?: boolean; // Assumed false if missing
   enabled?: boolean; // Assumed true if missing
+  icon?: string,
 }
 
 export interface IMenubarMenuItemRole {

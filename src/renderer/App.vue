@@ -5,15 +5,32 @@
     class="application"
   >
     <Titlebar
-      v-if="$route.name !== 'playing-view'"
+      v-if="!($route.name === 'playing-view' || ($route.name === 'browsing-view' && !isDarwin))"
+      :is-landing-view="$route.name === 'landing-view'"
+      :is-browsing-view="$route.name === 'browsing-view'"
+      :show-sidebar="showSidebar"
       :enable-full-screen-button="['landing-view', 'playing-view', 'browsing-view']
         .includes($route.name)"
     />
+    <transition name="sidebar">
+      <Sidebar
+        v-if="showSidebar"
+        :show-sidebar="showSidebar"
+        :current-url="currentUrl"
+      />
+    </transition>
     <transition
       :name="transitionMode"
       mode="out-in"
     >
-      <router-view :open-file-args="openFileArgs" />
+      <router-view
+        :style="{
+          width: showSidebar ? 'calc(100% - 76px)' : '100%',
+        }"
+        :open-file-args="openFileArgs"
+        :show-sidebar="showSidebar"
+        @update-current-url="currentUrl = $event"
+      />
     </transition>
   </div>
 </template>
@@ -21,7 +38,10 @@
 <script lang="ts">
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ipcRenderer, Event } from 'electron';
+import { mapActions } from 'vuex';
+import { SubtitleManager as smActions } from '@/store/actionTypes';
 import Titlebar from '@/components/Titlebar.vue';
+import Sidebar from '@/components/Sidebar.vue';
 import '@/css/style.scss';
 import drag from '@/helpers/drag';
 
@@ -29,20 +49,38 @@ export default {
   name: 'Splayer',
   components: {
     Titlebar,
+    Sidebar,
   },
   data() {
     return {
       transitionMode: '',
       openFileArgs: null,
+      showSidebar: false,
+      currentUrl: '',
     };
+  },
+  computed: {
+    isDarwin() {
+      return process.platform === 'darwin';
+    },
   },
   watch: {
     $route(to: any, from: any) {
       if (to.name === 'landing-view' && from.name === 'language-setting') this.transitionMode = 'fade';
+      if (from.name === 'playing-view' && to.name !== 'playing-view') this.resetManager();
       else this.transitionMode = '';
+      if (to.name !== 'browsing-view' && !(to.name === 'landing-view' && from.name === 'browsing-view')) this.showSidebar = false;
+      if (from.name === 'browsing-view' && to.name === 'landing-view') this.currentUrl = '';
+      if (from.name === 'browsing-view' && to.name === 'playing-view') this.currentUrl = '';
+    },
+    showSidebar(val: boolean) {
+      ipcRenderer.send('update-sidebar', val);
     },
   },
   mounted() {
+    this.$event.on('side-bar-mouseup', () => {
+      this.showSidebar = !this.showSidebar;
+    });
     ipcRenderer.on('open-file', (event: Event, args: { onlySubtitle: boolean, files: string[] }) => {
       this.openFileArgs = args;
     });
@@ -64,6 +102,9 @@ export default {
     }, 1500000); // keep alive every 25 min.
   },
   methods: {
+    ...mapActions({
+      resetManager: smActions.resetManager,
+    }),
     mainCommitProxy(commitType: string, commitPayload: any) {
       this.$store.commit(commitType, commitPayload);
     },
@@ -77,10 +118,20 @@ export default {
 <style lang="scss">
 // global scss
 // @import "@/css/style.scss";
-.landing-view {
-  background-image: linear-gradient(-28deg, #414141 0%, #545454 47%, #7B7B7B 100%);
+.sidebar {
+  &-enter-active {
+    transition: width 500ms ease-out;
+  }
+  &-leave-active {
+    transition: width 250ms ease-in;
+  }
+  &-enter, &-leave-to {
+    width: 0;
+  }
 }
-
+.landing-view {
+  background-color: #434349;
+}
 .fade {
   &-enter-active {
     transition: opacity 500ms ease-out;
@@ -88,10 +139,7 @@ export default {
   &-leave-active {
     transition: opacity 250ms ease-in;
   }
-  &-enter {
-    opacity: 0;
-  }
-  &-leave-to {
+  &-enter, &-leave-to {
     opacity: 0;
   }
 }

@@ -20,20 +20,8 @@ export default class MenuService {
     ipcRenderer.send('update-route-name', routeName);
   }
 
-  public updatePaused(paused: boolean) {
-    ipcRenderer.send('update-paused', paused);
-  }
-
-  public updatePlaylist(playlistOpened: boolean) {
-    ipcRenderer.send('update-playlist', playlistOpened);
-  }
-
-  public updatePlayingViewTop(topOnWindow: boolean) {
-    ipcRenderer.send('update-playingview-on-top', topOnWindow);
-  }
-
-  public updateBrowsingViewTop(topOnWindow: boolean) {
-    ipcRenderer.send('update-browsingview-on-top', topOnWindow);
+  public updateMenuItemLabel(id: string, label: string) {
+    ipcRenderer.send('update-label', id, label);
   }
 
   public updateMenuItemChecked(id: string, checked: boolean) {
@@ -42,6 +30,10 @@ export default class MenuService {
 
   public updateMenuItemEnabled(id: string, enabled: boolean) {
     ipcRenderer.send('update-enabled', id, enabled);
+  }
+
+  public updateFocusedWindow(isFocusedOnMain: boolean, isNewWindow: boolean) {
+    ipcRenderer.send('update-focused-window', isFocusedOnMain, isNewWindow);
   }
 
   public resolveMute(state: boolean) {
